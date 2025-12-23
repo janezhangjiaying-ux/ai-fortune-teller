@@ -5,7 +5,7 @@ import { analyzeTarot } from '../services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
 import OnboardingForm from './OnboardingForm';
 import TarotLoading from './TarotLoading';
-import { Sparkles, RefreshCw, BrainCircuit, Bookmark, ShieldCheck, Crown, X, Star, HelpCircle } from 'lucide-react';
+import { Sparkles, RefreshCw, BrainCircuit, Bookmark, ShieldCheck, Crown, X, Star, HelpCircle, History } from 'lucide-react';
 import { Wechat } from 'pay-sdk-react';
 import 'pay-sdk-react/dist/css/index.min.css';
 

@@ -4,7 +4,7 @@ import { DreamAnalysis, InterpretationStyle, UserProfile, HistoryRecord } from '
 import { analyzeDream } from '../services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
 import OnboardingForm from './OnboardingForm';
-import { Sparkles, RefreshCw, Crown, ShieldCheck, X, HelpCircle, Moon, Star } from 'lucide-react';
+import { Sparkles, RefreshCw, Crown, ShieldCheck, X, HelpCircle, Moon, Star, History } from 'lucide-react';
 
 interface DreamViewProps {
   userProfile: UserProfile | null;
