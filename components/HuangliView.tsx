@@ -180,7 +180,7 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
-          wechatUrl: process.env.IS_PRODUCTION ? "/payment-qr.jpg" : "qr_code.png"
+          wechatUrl: "/payment-qr.jpg"
         });
       }, 500);
     });
@@ -289,7 +289,7 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
               {process.env.IS_PRODUCTION ? (
                 <Wechat createOrder={createWechatOrder} />
               ) : (
-                <img src="qr_code.png" alt="QR Code" onError={(e) => { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Huangli_VIP_0.66"; }} className="w-60 h-60 rounded-xl bg-white p-2" />
+                <img src="/payment-qr.jpg" alt="QR Code" onError={(e) => { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Huangli_VIP_0.66"; }} className="w-60 h-60 rounded-xl bg-white p-2" />
               )}
               <div className="text-center"><span className="text-5xl font-bold text-white tracking-tight">¥ 0.66</span></div>
             </div>

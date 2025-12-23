@@ -17,10 +17,26 @@ interface DreamViewProps {
 const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onSave, customAnalyze, initialAnalysis }) => {
   const [content, setContent] = useState(initialAnalysis?.dreamContent || '');
   const [style, setStyle] = useState<InterpretationStyle>('ZHOUGONG');
-  const [analysis, setAnalysis] = useState<DreamAnalysis | null>(initialAnalysis || null);
+  const [analysis, setAnalysis] = useState<DreamAnalysis | null>(() => {
+    // 验证initialAnalysis的完整性
+    if (initialAnalysis && typeof initialAnalysis === 'object') {
+      const analysis = initialAnalysis as DreamAnalysis;
+      // 检查必需字段是否存在
+      if (analysis.dreamContent && analysis.mainAnalysis && analysis.hiddenMeaning && analysis.lifeAdvice) {
+        return analysis;
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(false);
   const [vipLoading, setVipLoading] = useState(false);
-  const [vipEnabled, setVipEnabled] = useState(!!initialAnalysis?.vipData);
+  const [vipEnabled, setVipEnabled] = useState(() => {
+    if (initialAnalysis && typeof initialAnalysis === 'object') {
+      const analysis = initialAnalysis as DreamAnalysis;
+      return !!(analysis.vipData);
+    }
+    return false;
+  });
   const [showPayment, setShowPayment] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -103,10 +119,21 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
     try {
       const isVip = forceVip || vipEnabled;
       const result = await analyzeDream(content, style, (userProfile || undefined), isVip);
+      console.log('梦境解析结果:', result); // 添加调试日志
       setAnalysis(result);
       if (isVip) setVipEnabled(true);
     } catch (err) { 
-      console.error(err); 
+      console.error('梦境解析失败:', err);
+      // 设置错误状态的分析结果
+      setAnalysis({
+        dreamContent: content,
+        style,
+        coreSymbols: [],
+        mainAnalysis: '解析过程中出现错误，请稍后重试。如果问题持续，请联系客服。',
+        hiddenMeaning: '暂时无法获取潜意识预兆分析。',
+        lifeAdvice: '暂时无法获取生活指引建议。',
+        vipData: undefined
+      });
     } finally { 
       clearInterval(progressInterval);
       setLoading(false); 
@@ -229,8 +256,8 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
         ) : (
           <div className="space-y-10 animate-in slide-in-from-bottom-8 duration-700">
             <div className="bg-slate-900/40 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-[4rem] p-12 text-center shadow-sm"><p className="chinese-font text-3xl font-light italic text-slate-900 dark:text-slate-100 tracking-wide">“{content}”</p></div>
-            <div className="p-10 border border-slate-100 dark:border-slate-800 rounded-[3rem] bg-white/5 dark:bg-slate-900/20 relative shadow-sm"><div className="flex items-center gap-3 mb-8 text-indigo-500"><Sparkles size={24} className="text-amber-500" /><h4 className="chinese-font text-2xl font-bold tracking-widest">{style === 'FREUD' ? '心理学深度分析' : '民俗深度解析'}</h4></div><p className="text-slate-800 dark:text-slate-200 leading-relaxed chinese-font text-xl font-light tracking-widest text-justify">{analysis.mainAnalysis}</p></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-8 bg-indigo-500/5 border border-indigo-500/10 rounded-[2.5rem]"><h5 className="text-xs font-bold text-indigo-600 uppercase mb-4">潜意识预兆</h5><p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-light">{analysis.hiddenMeaning}</p></div><div className="p-8 bg-purple-500/5 border border-purple-500/10 rounded-[2.5rem]"><h5 className="text-xs font-bold text-purple-600 uppercase mb-4">现实生活指引</h5><p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-light">{analysis.lifeAdvice}</p></div></div>
+            <div className="p-10 border border-slate-100 dark:border-slate-800 rounded-[3rem] bg-white/5 dark:bg-slate-900/20 relative shadow-sm"><div className="flex items-center gap-3 mb-8 text-indigo-500"><Sparkles size={24} className="text-amber-500" /><h4 className="chinese-font text-2xl font-bold tracking-widest">{style === 'FREUD' ? '心理学深度分析' : '民俗深度解析'}</h4></div><p className="text-slate-800 dark:text-slate-200 leading-relaxed chinese-font text-xl font-light tracking-widest text-justify">{analysis?.mainAnalysis || '解析中，请稍候...'}</p></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-8 bg-indigo-500/5 border border-indigo-500/10 rounded-[2.5rem]"><h5 className="text-xs font-bold text-indigo-600 uppercase mb-4">潜意识预兆</h5><p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-light">{analysis?.hiddenMeaning || '解析中，请稍候...'}</p></div><div className="p-8 bg-purple-500/5 border border-purple-500/10 rounded-[2.5rem]"><h5 className="text-xs font-bold text-purple-600 uppercase mb-4">现实生活指引</h5><p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-light">{analysis?.lifeAdvice || '解析中，请稍候...'}</p></div></div>
             
             <div className="px-2 space-y-4 pt-4">
               <div className="flex items-center gap-2 text-amber-500">
@@ -295,7 +322,7 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
       )}
 
       {showPayment && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-md animate-in fade-in"><div className="w-full max-sm overflow-hidden flex flex-col items-center"><div className="w-full bg-[#07C160] py-7 px-4 flex flex-col items-center rounded-t-[2.5rem]"><h3 className="text-white text-xl font-bold chinese-font">推荐使用微信支付</h3></div><div className="w-full bg-[#0b0e1a] p-10 flex flex-col items-center space-y-8 shadow-2xl"><img src={process.env.IS_PRODUCTION ? "/payment-qr.jpg" : "qr_code.png"} alt="QR" onError={(e) => { if (!process.env.IS_PRODUCTION) { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Dream_VIP_0.66"; } }} className="w-60 h-60 rounded-xl bg-white p-2" /><div className="text-center"><span className="text-5xl font-bold text-white tracking-tight">¥ 0.66</span></div></div><div className="w-full bg-[#0b0e1a] p-6 flex flex-col items-center gap-4 rounded-b-[2.5rem] border-t border-white/5 pb-12"><button onClick={paymentStatus === 'IDLE' ? handleConfirmPayment : undefined} className="w-full bg-[#07C160] text-white font-bold py-5 rounded-2xl active:scale-95">{paymentStatus === 'IDLE' ? '我已扫码支付' : '核实中...'}</button><button onClick={() => setShowPayment(false)} className="text-slate-500 text-xs mt-2">取消支付</button></div></div></div>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-md animate-in fade-in"><div className="w-full max-sm overflow-hidden flex flex-col items-center"><div className="w-full bg-[#07C160] py-7 px-4 flex flex-col items-center rounded-t-[2.5rem]"><h3 className="text-white text-xl font-bold chinese-font">推荐使用微信支付</h3></div><div className="w-full bg-[#0b0e1a] p-10 flex flex-col items-center space-y-8 shadow-2xl"><img src="/payment-qr.jpg" alt="QR" onError={(e) => { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Dream_VIP_0.66"; }} className="w-60 h-60 rounded-xl bg-white p-2" /><div className="text-center"><span className="text-5xl font-bold text-white tracking-tight">¥ 0.66</span></div></div><div className="w-full bg-[#0b0e1a] p-6 flex flex-col items-center gap-4 rounded-b-[2.5rem] border-t border-white/5 pb-12"><button onClick={paymentStatus === 'IDLE' ? handleConfirmPayment : undefined} className="w-full bg-[#07C160] text-white font-bold py-5 rounded-2xl active:scale-95">{paymentStatus === 'IDLE' ? '我已扫码支付' : '核实中...'}</button><button onClick={() => setShowPayment(false)} className="text-slate-500 text-xs mt-2">取消支付</button></div></div></div>
       )}
 
       {showPaymentVerification && (

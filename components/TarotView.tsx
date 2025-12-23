@@ -43,10 +43,26 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
   const [question, setQuestion] = useState(initialAnalysis?.question || '');
   const [gender, setGender] = useState<Gender>(Gender.UNKNOWN);
   const [pickedCards, setPickedCards] = useState<TarotCard[]>(initialCards || []);
-  const [analysis, setAnalysis] = useState<TarotAnalysis | null>(initialAnalysis || null);
+  const [analysis, setAnalysis] = useState<TarotAnalysis | null>(() => {
+    // 验证initialAnalysis的完整性
+    if (initialAnalysis && typeof initialAnalysis === 'object') {
+      const analysis = initialAnalysis as TarotAnalysis;
+      // 检查必需字段是否存在
+      if (analysis.interpretation && analysis.advice && analysis.pastPresentFuture) {
+        return analysis;
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(false);
   const [vipLoading, setVipLoading] = useState(false);
-  const [vipEnabled, setVipEnabled] = useState(!!initialAnalysis?.vipData);
+  const [vipEnabled, setVipEnabled] = useState(() => {
+    if (initialAnalysis && typeof initialAnalysis === 'object') {
+      const analysis = initialAnalysis as TarotAnalysis;
+      return !!(analysis.vipData);
+    }
+    return false;
+  });
   const [showPayment, setShowPayment] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'VERIFYING' | 'SUCCESS'>('IDLE');
@@ -121,7 +137,7 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
-          wechatUrl: process.env.IS_PRODUCTION ? "/payment-qr.jpg" : "qr_code.png"
+          wechatUrl: "/payment-qr.jpg"
         });
       }, 500);
     });
@@ -136,11 +152,24 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
       const result = customAnalyze
         ? await customAnalyze(question, pickedCards, gender, isVip)
         : await analyzeTarot(question, pickedCards, gender, (userProfile || undefined), isVip);
+      console.log('塔罗解析结果:', result); // 添加调试日志
       setAnalysis(result);
       if (isVip) setVipEnabled(true);
     } catch (err) {
       console.error('塔罗分析失败:', err);
       setError('分析过程中出现错误，请检查网络连接或API配置后重试。');
+      // 设置错误状态的分析结果，确保界面不会黑屏
+      setAnalysis({
+        question,
+        interpretation: '解析过程中出现错误，请稍后重试。如果问题持续，请联系客服。',
+        advice: '暂时无法获取建议。',
+        pastPresentFuture: {
+          past: '暂时无法获取过去解读。',
+          present: '暂时无法获取现在解读。',
+          future: '暂时无法获取未来解读。'
+        },
+        vipData: undefined
+      });
     } finally {
       setLoading(false);
       setVipLoading(false);
@@ -276,14 +305,14 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
                <div key={k} className="p-8 bg-white dark:bg-slate-900/60 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all">
                   <div className={`absolute top-0 left-0 w-1.5 h-full ${i === 0 ? 'bg-purple-500/40' : i === 1 ? 'bg-indigo-500/40' : 'bg-pink-500/40'}`}></div>
                   <h5 className="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 text-slate-500"><Bookmark size={14} /> {['过去','现在','未来'][i]}</h5>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm text-justify font-light">{analysis.pastPresentFuture?.[k as keyof typeof analysis.pastPresentFuture] || '暂无解读'}</p>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm text-justify font-light">{analysis?.pastPresentFuture?.[k as keyof typeof analysis.pastPresentFuture] || '解析中，请稍候...'}</p>
                </div>
              ))}
           </div>
           <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/10 p-10 md:p-14 rounded-[3.5rem] border border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden">
              <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px]"></div>
              <h4 className="text-indigo-700 dark:text-indigo-400 font-bold mb-8 flex items-center gap-3 chinese-font text-2xl tracking-widest"><BrainCircuit size={28} className="text-amber-500" /> 命运综合解读</h4>
-             <p className="text-slate-800 dark:text-slate-200 leading-relaxed chinese-font text-lg font-light tracking-wide text-justify">{analysis.interpretation}</p>
+             <p className="text-slate-800 dark:text-slate-200 leading-relaxed chinese-font text-lg font-light tracking-wide text-justify">{analysis?.interpretation || '解析中，请稍候...'}</p>
           </div>
           
           <div className="px-2 space-y-3 mt-8">
@@ -347,7 +376,7 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
               {process.env.IS_PRODUCTION ? (
                 <Wechat createOrder={createWechatOrder} />
               ) : (
-                <img src="qr_code.png" alt="QR Code" onError={(e) => { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Tarot_VIP_0.66"; }} className="w-60 h-60 rounded-xl bg-white p-2" />
+                <img src="/payment-qr.jpg" alt="QR Code" onError={(e) => { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Tarot_VIP_0.66"; }} className="w-60 h-60 rounded-xl bg-white p-2" />
               )}
               <div className="text-center"><span className="text-5xl font-bold text-white tracking-tight">¥ 0.66</span></div>
             </div>
