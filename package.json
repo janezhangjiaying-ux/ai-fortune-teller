@@ -1,7 +1,7 @@
 {
   "name": "灵机万象---ai-命理大师",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
