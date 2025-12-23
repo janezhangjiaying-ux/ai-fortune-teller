@@ -89,3 +89,43 @@ export const DreamInterpretationIcon = ({ size = 24, className = "" }: { size?: 
     <path d="M3 15.5c0-2 1.5-3.5 3.5-3.5 0.5 0 1 0.1 1.4 0.3C9 10.5 11 9.5 13 9.5c2.5 0 4.5 1.8 4.9 4.2 1.2 0.3 2.1 1.4 2.1 2.8 0 1.7-1.3 3-3 3H6c-1.7 0-3-1.3-3-3z" fill="currentColor" fillOpacity="0.05" />
   </svg>
 );
+
+// 黄历专属图标 - 结合日历和传统中国元素
+export const HuangliIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="1.2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    {/* 日历外框 */}
+    <rect x="3" y="4" width="18" height="16" rx="2" ry="2" />
+    
+    {/* 日历顶部 */}
+    <line x1="3" y1="9" x2="21" y2="9" />
+    
+    {/* 日期格子 */}
+    <line x1="9" y1="4" x2="9" y2="9" />
+    <line x1="15" y1="4" x2="15" y2="9" />
+    
+    {/* 日期点 */}
+    <circle cx="6" cy="12" r="1.5" fill="currentColor" fillOpacity="0.3" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" fillOpacity="0.3" />
+    <circle cx="18" cy="12" r="1.5" fill="currentColor" fillOpacity="0.3" />
+    <circle cx="6" cy="16" r="1.5" fill="currentColor" fillOpacity="0.3" />
+    <circle cx="12" cy="16" r="1.5" fill="currentColor" fillOpacity="0.3" />
+    
+    {/* 特殊标记 - 代表吉日 */}
+    <circle cx="18" cy="16" r="1.5" fill="currentColor" fillOpacity="0.6" />
+    <path d="M18 16l0.5 1" strokeWidth="1" opacity="0.8" />
+    
+    {/* 传统元素 - 太极符号简化版 */}
+    <circle cx="6" cy="6" r="1.2" fill="currentColor" fillOpacity="0.4" />
+    <path d="M6 6l0.8 0.8" strokeWidth="0.8" opacity="0.6" />
+  </svg>
+);

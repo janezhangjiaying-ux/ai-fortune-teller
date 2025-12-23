@@ -26,12 +26,22 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'VERIFYING' | 'SUCCESS'>('IDLE');
   const [showPaymentVerification, setShowPaymentVerification] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   // 新增：加载进度和文案状态
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
 
   const handleVipClick = () => { if (vipEnabled || vipLoading) return; setShowPayment(true); setPaymentStatus('IDLE'); };
+
+  const handleSave = () => {
+    if (!analysis || !onSave) return;
+    onSave({
+      type: 'DREAM',
+      analysis: analysis
+    });
+    setIsSaved(true);
+  };
 
   const handleConfirmPayment = () => {
     if (process.env.IS_PRODUCTION) {
@@ -244,6 +254,16 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
                 {vipEnabled ? <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center text-white animate-in zoom-in shadow-lg"><ShieldCheck size={24} /></div> : <Crown size={28} className={`text-slate-400 ${vipLoading ? 'animate-pulse' : ''}`} />}
               </button>
               {vipLoading ? <div className="py-12 flex flex-col items-center justify-center gap-4"><RefreshCw className="animate-spin text-amber-500" size={32} /><p className="text-xs text-amber-600/60 chinese-font">推演中...</p></div> : vipEnabled && analysis.vipData && <div className="mt-8 animate-in slide-in-from-top-4 duration-1000"><VIPRecommendationSection data={analysis.vipData} /></div>}
+              
+              <div className="flex gap-4 pt-6">
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaved}
+                  className={`flex-1 py-5 rounded-[2rem] flex items-center justify-center gap-3 transition-all font-bold text-sm tracking-widest uppercase border ${isSaved ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:scale-105 active:scale-95 shadow-xl shadow-indigo-500/20'}`}
+                >
+                  <History size={20} /> {isSaved ? '已存入万象' : '存入万象档案'}
+                </button>
+              </div>
             </div>
             <div className="flex gap-4 pt-8"><button onClick={reset} className="flex-1 py-5 rounded-[2rem] border border-slate-200 font-bold text-sm tracking-widest text-slate-500 hover:bg-slate-50">重新解析</button></div>
           </div>

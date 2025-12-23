@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { HistoryRecord, RecordType, DreamAnalysis } from '../types';
+import { HistoryRecord, RecordType, DreamAnalysis, HuangliData } from '../types';
 import { Trash2, Calendar, ChevronRight, Clock } from 'lucide-react';
-import { MysticTarotIcon, ZiweiWheelIcon, DreamInterpretationIcon } from './Icons';
+import { MysticTarotIcon, ZiweiWheelIcon, DreamInterpretationIcon, HuangliIcon } from './Icons';
 
 interface HistoryViewProps {
   records: HistoryRecord[];
@@ -26,6 +26,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ records, onDelete, onSelect, 
       case 'ASTROLOGY': return <ZiweiWheelIcon size={24} />;
       case 'TAROT': return <MysticTarotIcon size={24} />;
       case 'DREAM': return <DreamInterpretationIcon size={24} />;
+      case 'HUANGLI': return <HuangliIcon size={24} />;
       default: return <Clock size={24} />;
     }
   };
@@ -35,6 +36,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ records, onDelete, onSelect, 
       case 'ASTROLOGY': return 'bg-amber-500/10 text-amber-600 dark:text-amber-500';
       case 'TAROT': return 'bg-purple-500/10 text-purple-600 dark:text-purple-500';
       case 'DREAM': return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-500';
+      case 'HUANGLI': return 'bg-green-500/10 text-green-600 dark:text-green-500';
       default: return 'bg-slate-500/10 text-slate-600';
     }
   };
@@ -47,6 +49,10 @@ const HistoryView: React.FC<HistoryViewProps> = ({ records, onDelete, onSelect, 
     if (record.type === 'DREAM') {
       const content = (record.analysis as DreamAnalysis).dreamContent;
       return content.length > 10 ? content.substring(0, 10) + '...' : content;
+    }
+    if (record.type === 'HUANGLI') {
+      const data = record.analysis as HuangliData;
+      return `${data.lunarDate}黄历`;
     }
     return '历史记录';
   };

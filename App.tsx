@@ -377,6 +377,7 @@ const App: React.FC = () => {
           <HuangliView 
             userProfile={userProfile}
             onUpdateProfile={handleUpdateProfile}
+            onSave={handleSaveRecord}
           />
         )}
       </main>
