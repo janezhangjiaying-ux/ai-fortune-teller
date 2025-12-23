@@ -53,6 +53,7 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
   const [pickingPhase, setPickingPhase] = useState<'IDLE' | 'SHUFFLING' | 'FAN' | 'DONE'>(initialCards ? 'DONE' : 'IDLE');
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
+  const [showPaymentVerification, setShowPaymentVerification] = useState(false);
 
   const handleVipClick = () => {
     if (vipEnabled || vipLoading) return;
@@ -61,21 +62,28 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
   };
 
   const handleConfirmPayment = () => {
-    setPaymentStatus('VERIFYING');
-    setTimeout(() => {
-      setPaymentStatus('SUCCESS');
-      setVipEnabled(true);
+    if (process.env.IS_PRODUCTION) {
+      // 生产环境：显示支付验证界面
+      setShowPayment(false);
+      setShowPaymentVerification(true);
+    } else {
+      // 开发环境：直接模拟支付成功
+      setPaymentStatus('VERIFYING');
       setTimeout(() => {
-        setShowPayment(false);
-        // 检查用户是否已填写基本画像信息（生日和MBTI）
-        const hasBasicProfile = !!(userProfile?.birthDate && userProfile?.mbti);
-        if (!hasBasicProfile) {
-          setShowProfileForm(true);
-        } else if (analysis) {
-          handleAnalyze(true);
-        }
-      }, 800);
-    }, 1200);
+        setPaymentStatus('SUCCESS');
+        setVipEnabled(true);
+        setTimeout(() => {
+          setShowPayment(false);
+          // 检查用户是否已填写基本画像信息（生日和MBTI）
+          const hasBasicProfile = !!(userProfile?.birthDate && userProfile?.mbti);
+          if (!hasBasicProfile) {
+            setShowProfileForm(true);
+          } else if (analysis) {
+            handleAnalyze(true);
+          }
+        }, 800);
+      }, 1200);
+    }
   };
 
   const handleAnalyze = async (forceVip: boolean = false) => {
@@ -285,12 +293,56 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
           <div className="w-full max-w-sm overflow-hidden flex flex-col items-center">
             <div className="w-full bg-[#07C160] py-7 px-4 flex flex-col items-center rounded-t-[2.5rem]"><h3 className="text-white text-xl font-bold tracking-widest">推荐使用微信支付</h3></div>
             <div className="w-full bg-[#0b0e1a] p-10 flex flex-col items-center space-y-8 shadow-2xl">
-              <img src="qr_code.png" alt="QR Code" onError={(e) => { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Tarot_VIP_0.66"; }} className="w-60 h-60 rounded-xl bg-white p-2" />
+              <img src={process.env.IS_PRODUCTION ? "/payment-qr.jpg" : "qr_code.png"} alt="QR Code" onError={(e) => { if (!process.env.IS_PRODUCTION) { (e.target as any).src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Tarot_VIP_0.66"; } }} className="w-60 h-60 rounded-xl bg-white p-2" />
               <div className="text-center"><span className="text-5xl font-bold text-white tracking-tight">¥ 0.66</span></div>
             </div>
             <div className="w-full bg-[#0b0e1a] p-6 flex flex-col items-center gap-4 rounded-b-[2.5rem] border-t border-white/5 pb-12">
                <button onClick={paymentStatus === 'IDLE' ? handleConfirmPayment : undefined} className="w-full bg-[#07C160] text-white font-bold py-5 rounded-2xl active:scale-95 transition-all">{paymentStatus === 'IDLE' ? '我已支付' : paymentStatus === 'VERIFYING' ? '核实中...' : '支付成功'}</button>
                <button onClick={() => setShowPayment(false)} className="text-slate-500 text-xs mt-2 hover:text-slate-300 transition-all">取消支付</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPaymentVerification && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-sm overflow-hidden flex flex-col items-center">
+            <div className="w-full bg-[#07C160] py-7 px-4 flex flex-col items-center rounded-t-[2.5rem]">
+              <h3 className="text-white text-xl font-bold tracking-widest">支付验证</h3>
+            </div>
+            <div className="w-full bg-[#0b0e1a] p-6 flex flex-col items-center space-y-6 shadow-2xl">
+              <div className="text-center text-white space-y-2">
+                <p className="text-sm">请完成支付后，上传支付截图或输入交易号</p>
+                <p className="text-xs text-slate-400">我们将在24小时内审核并激活VIP功能</p>
+              </div>
+              <div className="w-full space-y-4">
+                <div>
+                  <label className="block text-xs text-slate-300 mb-2">交易号（选填）</label>
+                  <input
+                    type="text"
+                    placeholder="请输入微信支付交易号"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-[#07C160]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-300 mb-2">支付截图（选填）</label>
+                  <div className="w-full h-20 border-2 border-dashed border-slate-600 rounded-lg flex items-center justify-center text-slate-400 text-xs">
+                    点击上传截图
+                  </div>
+                </div>
+              </div>
+              <div className="text-center text-xs text-slate-400 space-y-1">
+                <p>支付金额：¥0.66</p>
+                <p>激活后可获得VIP专属功能</p>
+              </div>
+            </div>
+            <div className="w-full bg-[#0b0e1a] p-6 flex flex-col items-center gap-4 rounded-b-[2.5rem] border-t border-white/5 pb-12">
+              <button className="w-full bg-[#07C160] text-white font-bold py-5 rounded-2xl active:scale-95 transition-all">
+                提交验证
+              </button>
+              <button onClick={() => setShowPaymentVerification(false)} className="text-slate-500 text-xs mt-2 hover:text-slate-300 transition-all">
+                取消
+              </button>
             </div>
           </div>
         </div>
