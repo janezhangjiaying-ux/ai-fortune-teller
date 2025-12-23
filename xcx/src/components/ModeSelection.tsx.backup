@@ -1,0 +1,557 @@
+import React from 'react';
+import { View, Text } from '@tarojs/components';
+
+interface ModeSelectionProps {
+  onSelect: (mode: 'ASTROLOGY' | 'TAROT' | 'DREAM' | 'HUANGLI' | 'HISTORY') => void;
+  onToggleTheme?: () => void;
+  theme?: 'light' | 'dark';
+}
+
+const ModeSelection: React.FC<ModeSelectionProps> = ({ onSelect, onToggleTheme, theme }) => {
+  return (
+    <View style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '48rpx',
+      backgroundColor: theme === 'dark' ? '#060608' : '#f8fafc',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* 星尘背景纹理 - 使用渐变模拟 */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: theme === 'dark'
+          ? 'radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)'
+          : 'radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.03) 0%, transparent 50%)',
+        opacity: 0.6
+      }} />
+
+      {/* 主题切换按钮 */}
+      <View
+        onClick={onToggleTheme}
+        style={{
+          position: 'absolute',
+          top: '48rpx',
+          right: '48rpx',
+          width: '96rpx',
+          height: '96rpx',
+          borderRadius: '50%',
+          backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+          border: `1rpx solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(20rpx)',
+          boxShadow: theme === 'dark'
+            ? '0 8rpx 32rpx rgba(0, 0, 0, 0.3)'
+            : '0 8rpx 32rpx rgba(0, 0, 0, 0.1)',
+          zIndex: 10
+        }}
+      >
+        <Text style={{
+          fontSize: '40rpx'
+        }}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </Text>
+      </View>
+
+      {/* 内容容器 */}
+      <View style={{
+        width: '100%',
+        maxWidth: '1200rpx',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        {/* 标题区域 */}
+        <View style={{
+          textAlign: 'center',
+          marginBottom: '192rpx'
+        }}>
+          {/* 主标题行 - 渐变文字效果 */}
+          <View style={{
+            position: 'relative',
+            display: 'inline-block',
+            marginBottom: '32rpx'
+          }}>
+            <Text style={{
+              fontSize: '96rpx',
+              fontWeight: 'bold',
+              background: theme === 'dark'
+                ? 'linear-gradient(135deg, #fbbf24, #a78bfa, #c084fc)'
+                : 'linear-gradient(135deg, #d97706, #4338ca, #7c3aed)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              lineHeight: '1.2'
+            }}>
+              灵机万象
+            </Text>
+            <Text style={{
+              position: 'absolute',
+              top: '-32rpx',
+              right: '-64rpx',
+              fontSize: '56rpx',
+              opacity: 0.7
+            }}>
+              ✨
+            </Text>
+          </View>
+
+          {/* 副标题行 */}
+          <Text style={{
+            fontSize: '24rpx',
+            color: theme === 'dark' ? '#94a3b8' : '#64748b',
+            letterSpacing: '4rpx',
+            fontWeight: '300',
+            textTransform: 'uppercase'
+          }}>
+            AI 命理大师
+          </Text>
+        </View>
+
+        {/* 功能卡片网格 */}
+        <View style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '48rpx',
+          width: '100%',
+          maxWidth: '640rpx',
+          padding: '0 32rpx'
+        }}>
+        {/* 紫微命理卡片 */}
+        <View
+          onClick={() => onSelect('ASTROLOGY')}
+          style={{
+            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)',
+            border: `2rpx solid ${theme === 'dark' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)'}`,
+            borderRadius: '48rpx',
+            padding: '64rpx 32rpx',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: theme === 'dark'
+              ? '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.5), inset 0 1rpx 0 rgba(255, 255, 255, 0.1)'
+              : '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.25), inset 0 1rpx 0 rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(40rpx)',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* 悬停光效 */}
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 70%)',
+            opacity: 0.5
+          }} />
+
+          <View style={{
+            width: '112rpx',
+            height: '112rpx',
+            borderRadius: '32rpx',
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            border: '2rpx solid rgba(245, 158, 11, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '48rpx',
+            boxShadow: '0 8rpx 16rpx rgba(245, 158, 11, 0.2)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{ fontSize: '64rpx' }}>⭐</Text>
+          </View>
+          <Text style={{
+            fontSize: '36rpx',
+            fontWeight: 'bold',
+            color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
+            marginBottom: '24rpx',
+            letterSpacing: '2rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            紫微命理
+          </Text>
+          <View style={{
+            textAlign: 'center',
+            marginBottom: '48rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              千年星命智慧
+            </Text>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              解析人生格局
+            </Text>
+          </View>
+          <View style={{
+            padding: '16rpx 32rpx',
+            borderRadius: '32rpx',
+            border: '2rpx solid rgba(245, 158, 11, 0.4)',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '20rpx',
+              color: '#d97706',
+              fontWeight: 'bold',
+              letterSpacing: '2rpx',
+              textTransform: 'uppercase'
+            }}>
+              开启天机
+            </Text>
+          </View>
+        </View>
+
+        {/* 神秘塔罗卡片 */}
+        <View
+          onClick={() => onSelect('TAROT')}
+          style={{
+            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)',
+            border: `2rpx solid ${theme === 'dark' ? 'rgba(147, 51, 234, 0.3)' : 'rgba(147, 51, 234, 0.2)'}`,
+            borderRadius: '48rpx',
+            padding: '64rpx 32rpx',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: theme === 'dark'
+              ? '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.5), inset 0 1rpx 0 rgba(255, 255, 255, 0.1)'
+              : '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.25), inset 0 1rpx 0 rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(40rpx)',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* 悬停光效 */}
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, transparent 70%)',
+            opacity: 0.5
+          }} />
+
+          <View style={{
+            width: '112rpx',
+            height: '112rpx',
+            borderRadius: '32rpx',
+            backgroundColor: 'rgba(147, 51, 234, 0.15)',
+            border: '2rpx solid rgba(147, 51, 234, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '48rpx',
+            boxShadow: '0 8rpx 16rpx rgba(147, 51, 234, 0.2)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{ fontSize: '64rpx' }}>🔮</Text>
+          </View>
+          <Text style={{
+            fontSize: '36rpx',
+            fontWeight: 'bold',
+            color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
+            marginBottom: '24rpx',
+            letterSpacing: '2rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            神秘塔罗
+          </Text>
+          <View style={{
+            textAlign: 'center',
+            marginBottom: '48rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              西洋神秘占卜
+            </Text>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              寻找内心的答案
+            </Text>
+          </View>
+          <View style={{
+            padding: '16rpx 32rpx',
+            borderRadius: '32rpx',
+            border: '2rpx solid rgba(147, 51, 234, 0.4)',
+            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '20rpx',
+              color: '#9333ea',
+              fontWeight: 'bold',
+              letterSpacing: '2rpx',
+              textTransform: 'uppercase'
+            }}>
+              内心探索
+            </Text>
+          </View>
+        </View>
+
+        {/* 梦的解析卡片 */}
+        <View
+          onClick={() => onSelect('DREAM')}
+          style={{
+            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)',
+            border: `2rpx solid ${theme === 'dark' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)'}`,
+            borderRadius: '48rpx',
+            padding: '64rpx 32rpx',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: theme === 'dark'
+              ? '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.5), inset 0 1rpx 0 rgba(255, 255, 255, 0.1)'
+              : '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.25), inset 0 1rpx 0 rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(40rpx)',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* 悬停光效 */}
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 70%)',
+            opacity: 0.5
+          }} />
+
+          <View style={{
+            width: '112rpx',
+            height: '112rpx',
+            borderRadius: '32rpx',
+            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+            border: '2rpx solid rgba(99, 102, 241, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '48rpx',
+            boxShadow: '0 8rpx 16rpx rgba(99, 102, 241, 0.2)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{ fontSize: '64rpx' }}>💭</Text>
+          </View>
+          <Text style={{
+            fontSize: '36rpx',
+            fontWeight: 'bold',
+            color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
+            marginBottom: '24rpx',
+            letterSpacing: '2rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            梦的解析
+          </Text>
+          <View style={{
+            textAlign: 'center',
+            marginBottom: '48rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              洞察潜意识预示
+            </Text>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              拨开梦境迷雾
+            </Text>
+          </View>
+          <View style={{
+            padding: '16rpx 32rpx',
+            borderRadius: '32rpx',
+            border: '2rpx solid rgba(99, 102, 241, 0.4)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '20rpx',
+              color: '#6366f1',
+              fontWeight: 'bold',
+              letterSpacing: '2rpx',
+              textTransform: 'uppercase'
+            }}>
+              入梦解析
+            </Text>
+          </View>
+        </View>
+
+        {/* 老黄历卡片 */}
+        <View
+          onClick={() => onSelect('HUANGLI')}
+          style={{
+            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)',
+            border: `2rpx solid ${theme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`,
+            borderRadius: '48rpx',
+            padding: '64rpx 32rpx',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: theme === 'dark'
+              ? '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.5), inset 0 1rpx 0 rgba(255, 255, 255, 0.1)'
+              : '0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.25), inset 0 1rpx 0 rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(40rpx)',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* 悬停光效 */}
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, transparent 70%)',
+            opacity: 0.5
+          }} />
+
+          <View style={{
+            width: '112rpx',
+            height: '112rpx',
+            borderRadius: '32rpx',
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            border: '2rpx solid rgba(239, 68, 68, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '48rpx',
+            boxShadow: '0 8rpx 16rpx rgba(239, 68, 68, 0.2)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{ fontSize: '64rpx' }}>📅</Text>
+          </View>
+          <Text style={{
+            fontSize: '36rpx',
+            fontWeight: 'bold',
+            color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
+            marginBottom: '24rpx',
+            letterSpacing: '2rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            老黄历
+          </Text>
+          <View style={{
+            textAlign: 'center',
+            marginBottom: '48rpx',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              查吉凶、观节律
+            </Text>
+            <Text style={{
+              fontSize: '24rpx',
+              color: theme === 'dark' ? '#cbd5e1' : '#475569',
+              lineHeight: '36rpx',
+              display: 'block'
+            }}>
+              掌每日岁月之宜忌
+            </Text>
+          </View>
+          <View style={{
+            padding: '16rpx 32rpx',
+            borderRadius: '32rpx',
+            border: '2rpx solid rgba(239, 68, 68, 0.4)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <Text style={{
+              fontSize: '20rpx',
+              color: '#dc2626',
+              fontWeight: 'bold',
+              letterSpacing: '2rpx',
+              textTransform: 'uppercase'
+            }}>
+              观时择吉
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 底部签名 */}
+      <View style={{
+        marginTop: '192rpx',
+        textAlign: 'center',
+        zIndex: 10
+      }}>
+        <Text style={{
+          fontSize: '20rpx',
+          color: theme === 'dark' ? '#64748b' : '#94a3b8',
+          letterSpacing: '4rpx',
+          fontWeight: '300',
+          textTransform: 'uppercase'
+        }}>
+          Powered by AI 命理大师
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+export default ModeSelection;
