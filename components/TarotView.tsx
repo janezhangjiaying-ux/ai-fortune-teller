@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { TarotCard, TarotAnalysis, Gender, HistoryRecord, UserProfile } from '@/types';
 import { analyzeTarot } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
-import OnboardingForm from './OnboardingForm';
 import TarotLoading from './TarotLoading';
 import { Sparkles, RefreshCw, BrainCircuit, Bookmark, ShieldCheck, Crown, X, Star, HelpCircle } from 'lucide-react';
 
@@ -46,7 +45,7 @@ interface TarotViewProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (profile: UserProfile) => void;
   onSave?: (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => void;
-  onTriggerOnboarding?: () => void;
+  onTriggerOnboarding?: (callback?: () => void) => void;
   customAnalyze?: (question: string, cards: TarotCard[], gender: Gender, vip: boolean) => Promise<TarotAnalysis>;
   initialCards?: TarotCard[];
   initialAnalysis?: TarotAnalysis;

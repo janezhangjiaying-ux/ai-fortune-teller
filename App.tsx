@@ -209,16 +209,6 @@ const App: React.FC = () => {
     return <OnboardingForm onComplete={handleCompleteOnboarding} />;
   }
 
-  if (showGlobalOnboarding) {
-    return (
-      <OnboardingForm
-        onComplete={handleCompleteOnboarding}
-        initialProfile={userProfile}
-        onClose={() => setShowGlobalOnboarding(false)}
-      />
-    );
-  }
-
   const gridPositions = [
     { r: 4, c: 1 }, { r: 4, c: 2 }, { r: 4, c: 3 }, { r: 4, c: 4 }, 
     { r: 3, c: 4 }, { r: 2, c: 4 }, { r: 1, c: 4 }, 
@@ -455,6 +445,19 @@ const App: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {showGlobalOnboarding && (
+        <OnboardingForm
+          onComplete={handleCompleteOnboarding}
+          initialProfile={userProfile}
+          onClose={() => {
+            setShowGlobalOnboarding(false);
+            setVipOnboardingCallback(null);
+            setPreviousMode(null);
+            localStorage.removeItem('vip_onboarding_pending');
+          }}
+        />
+      )}
     </div>
   );
 };

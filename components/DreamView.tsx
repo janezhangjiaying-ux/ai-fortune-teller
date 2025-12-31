@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DreamAnalysis, InterpretationStyle, UserProfile, HistoryRecord } from '@/types';
 import { analyzeDream } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
-import OnboardingForm from './OnboardingForm';
 import DreamLoading from './DreamLoading';
 import { Sparkles, RefreshCw, Crown, ShieldCheck, X, HelpCircle, Moon, Star, BookOpen, Brain, Layers, Cpu, Globe } from 'lucide-react';
 
@@ -11,7 +10,7 @@ interface DreamViewProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (profile: UserProfile) => void;
   onSave?: (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => void;
-  onTriggerOnboarding?: () => void;
+  onTriggerOnboarding?: (callback?: () => void) => void;
   customAnalyze?: (content: string, style: InterpretationStyle, vip: boolean) => Promise<DreamAnalysis>;
   initialAnalysis?: DreamAnalysis | null;
 }

@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HuangliData, UserProfile, HistoryRecord } from '@/types';
 import { analyzeHuangli } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
-import OnboardingForm from './OnboardingForm';
 import { Calendar as CalendarIcon, Sparkles, Compass, ShieldAlert, Heart, Info, Crown, ShieldCheck, X, Star, Zap, User, Check, HelpCircle, RefreshCw } from 'lucide-react';
 
 const AlmanacLoading: React.FC = () => {
@@ -108,7 +107,7 @@ interface HuangliViewProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (profile: UserProfile) => void;
   onSave?: (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => void;
-  onTriggerOnboarding?: () => void;
+  onTriggerOnboarding?: (callback?: () => void) => void;
 }
 
 const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile, onSave, onTriggerOnboarding }) => {
