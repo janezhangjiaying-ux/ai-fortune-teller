@@ -6,31 +6,61 @@ import VIPRecommendationSection from './VIPRecommendationSection';
 import TarotLoading from './TarotLoading';
 import { Sparkles, RefreshCw, BrainCircuit, Bookmark, ShieldCheck, Crown, X, Star, HelpCircle } from 'lucide-react';
 
+const TAROT_ASSET_BASE = "/assets/tarot";
 const TAROT_IMAGES: Record<string, string> = {
-  "愚者": "https://upload.wikimedia.org/wikipedia/commons/9/90/RWS_Tarot_00_Fool.jpg",
-  "魔术师": "https://upload.wikimedia.org/wikipedia/commons/d/de/RWS_Tarot_01_Magician.jpg",
-  "女教皇": "https://upload.wikimedia.org/wikipedia/commons/8/88/RWS_Tarot_02_High_Priestess.jpg",
-  "皇后": "https://upload.wikimedia.org/wikipedia/commons/d/d2/RWS_Tarot_03_Empress.jpg",
-  "皇帝": "https://upload.wikimedia.org/wikipedia/commons/c/c3/RWS_Tarot_04_Emperor.jpg",
-  "教皇": "https://upload.wikimedia.org/wikipedia/commons/8/8d/RWS_Tarot_05_Hierophant.jpg",
-  "恋人": "https://upload.wikimedia.org/wikipedia/commons/3/3a/RWS_Tarot_06_Lovers.jpg",
-  "战车": "https://upload.wikimedia.org/wikipedia/commons/9/9b/RWS_Tarot_07_Chariot.jpg",
-  "力量": "https://upload.wikimedia.org/wikipedia/commons/f/f5/RWS_Tarot_08_Strength.jpg",
-  "隐士": "https://upload.wikimedia.org/wikipedia/commons/4/4d/RWS_Tarot_09_Hermit.jpg",
-  "命运之轮": "https://upload.wikimedia.org/wikipedia/commons/3/3c/RWS_Tarot_10_Wheel_of_Fortune.jpg",
-  "正义": "https://upload.wikimedia.org/wikipedia/commons/e/e0/RWS_Tarot_11_Justice.jpg",
-  "倒吊人": "https://upload.wikimedia.org/wikipedia/commons/2/2b/RWS_Tarot_12_Hanged_Man.jpg",
-  "死神": "https://upload.wikimedia.org/wikipedia/commons/d/d7/RWS_Tarot_13_Death.jpg",
-  "节制": "https://upload.wikimedia.org/wikipedia/commons/f/f8/RWS_Tarot_14_Temperance.jpg",
-  "恶魔": "https://upload.wikimedia.org/wikipedia/commons/5/55/RWS_Tarot_15_Devil.jpg",
-  "高塔": "https://upload.wikimedia.org/wikipedia/commons/5/53/RWS_Tarot_16_Tower.jpg",
-  "星星": "https://upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_17_Star.jpg",
-  "月亮": "https://upload.wikimedia.org/wikipedia/commons/7/7f/RWS_Tarot_18_Moon.jpg",
-  "太阳": "https://upload.wikimedia.org/wikipedia/commons/1/17/RWS_Tarot_19_Sun.jpg",
-  "审判": "https://upload.wikimedia.org/wikipedia/commons/d/dd/RWS_Tarot_20_Judgement.jpg",
-  "世界": "https://upload.wikimedia.org/wikipedia/commons/f/ff/RWS_Tarot_21_World.jpg"
+  "愚者": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_00_The_Fool.jpg`,
+  "魔术师": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_01_The_Magician.jpg`,
+  "女教皇": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_02_The_High_Priestess.jpg`,
+  "皇后": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_03_The_Empress.jpg`,
+  "皇帝": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_04_The_Emperor.jpg`,
+  "教皇": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_05_The_Hierophant.jpg`,
+  "恋人": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_06_The_Lovers.jpg`,
+  "战车": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_07_The_Chariot.jpg`,
+  "力量": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_08_Strength.jpg`,
+  "隐士": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_09_The_Hermit.jpg`,
+  "命运之轮": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_10_Wheel_of_Fortune.jpg`,
+  "正义": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_11_Justice.jpg`,
+  "倒吊人": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_12_The_Hanged_Man.jpg`,
+  "死神": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_13_Death.jpg`,
+  "节制": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_14_Temperance.jpg`,
+  "恶魔": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_15_The_Devil.jpg`,
+  "高塔": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_16_The_Tower.jpg`,
+  "星星": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_17_The_Star.jpg`,
+  "月亮": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_18_The_Moon.jpg`,
+  "太阳": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_19_The_Sun.jpg`,
+  "审判": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_20_Judgement.jpg`,
+  "世界": `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_21_The_World.jpg`
 };
-const MAJOR_ARCANA = Object.keys(TAROT_IMAGES);
+
+const SUIT_FILES: Record<string, string> = {
+  "圣杯": "Cups",
+  "权杖": "Wands",
+  "宝剑": "Swords",
+  "钱币": "Pentacles"
+};
+
+const RANK_LABELS = [
+  "王牌", "二", "三", "四", "五", "六", "七", "八", "九", "十", "侍从", "骑士", "皇后", "国王"
+];
+
+const buildMinorDeck = () => {
+  const minors: { name: string; image: string }[] = [];
+  Object.entries(SUIT_FILES).forEach(([suitCn, suitEn]) => {
+    RANK_LABELS.forEach((rank, idx) => {
+      const number = String(idx + 1).padStart(2, "0");
+      minors.push({
+        name: `${suitCn}${rank}`,
+        image: `${TAROT_ASSET_BASE}/Pictorial_Key_to_the_Tarot_${suitEn}_${number}.jpg`
+      });
+    });
+  });
+  return minors;
+};
+
+const TAROT_DECK = [
+  ...Object.entries(TAROT_IMAGES).map(([name, image]) => ({ name, image })),
+  ...buildMinorDeck()
+];
 
 const CardBack: React.FC<{ active?: boolean; className?: string }> = ({ active, className = "" }) => (
   <div className={`w-full h-full bg-[#0a0a1a] border-2 border-[#c0a060] rounded-xl flex items-center justify-center p-2 shadow-inner overflow-hidden relative transition-all duration-300 ${active ? 'ring-4 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.5)]' : ''} ${className}`}>
@@ -143,8 +173,12 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
     setSelectedIndices(newIndices);
     if (newIndices.length === 3) {
       setTimeout(() => {
-        const shuffled = [...MAJOR_ARCANA].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, 3).map(name => ({ name, image: TAROT_IMAGES[name], isUpright: Math.random() > 0.3 }));
+        const shuffled = [...TAROT_DECK].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 3).map(card => ({
+          name: card.name,
+          image: card.image,
+          isUpright: Math.random() > 0.3
+        }));
         setPickedCards(selected);
         setPickingPhase('DONE');
       }, 800);

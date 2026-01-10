@@ -12,7 +12,7 @@ import CelestialLoading from './components/CelestialLoading';
 import { MysticTarotIcon, ZiweiWheelIcon, DreamInterpretationIcon } from './components/Icons';
 import { UserInfo, Palace, AIAnalysis, HistoryRecord, DreamAnalysis, TarotAnalysis, UserProfile, Gender, InterpretationStyle, TarotCard } from './types';
 import { calculateChart } from './utils/ziweiEngine';
-import { analyzeDestiny, analyzeTarot, analyzeDream } from './services/geminiService';
+import { analyzeDestiny, analyzeTarot, analyzeDream, analyzeZiweiQuestion } from './services/geminiService';
 import { 
   Sparkles, 
   ArrowLeft, 
@@ -26,7 +26,9 @@ import {
   Coins,
   Heart as HeartIcon,
   Activity,
-  Lightbulb
+  Lightbulb,
+  MessageCircle,
+  RefreshCw
 } from 'lucide-react';
 
 type ViewMode = 'ASTROLOGY' | 'TAROT' | 'DREAM' | 'HUANGLI' | 'HISTORY' | 'PROFILE';
@@ -39,6 +41,10 @@ const App: React.FC = () => {
   const [chart, setChart] = useState<Palace[]>([]);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [ziweiQuestion, setZiweiQuestion] = useState('');
+  const [ziweiAnswer, setZiweiAnswer] = useState('');
+  const [ziweiAskError, setZiweiAskError] = useState<string | null>(null);
+  const [ziweiAsking, setZiweiAsking] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedPalace, setSelectedPalace] = useState<number | null>(null);
   const [records, setRecords] = useState<HistoryRecord[]>([]);
@@ -85,6 +91,13 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('destiny_records', JSON.stringify(records));
   }, [records]);
+
+  useEffect(() => {
+    setZiweiQuestion('');
+    setZiweiAnswer('');
+    setZiweiAskError(null);
+    setZiweiAsking(false);
+  }, [analysis, selectedMode]);
 
   const handleUpdateProfile = (profile: UserProfile) => {
     setUserProfile(profile);
@@ -153,6 +166,34 @@ const App: React.FC = () => {
       setAnalysisError((err as Error).message || 'AI解析失败，请稍后重试。');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleZiweiAsk = async () => {
+    setZiweiAskError(null);
+    if (!ziweiQuestion.trim()) {
+      setZiweiAskError('请先写下你想问的问题');
+      return;
+    }
+    if (!user || !analysis) {
+      setZiweiAskError('请先完成命盘推演');
+      return;
+    }
+    setZiweiAsking(true);
+    try {
+      const answer = await analyzeZiweiQuestion(
+        user,
+        chart,
+        analysis,
+        ziweiQuestion.trim(),
+        userProfile?.constellation ? userProfile : undefined
+      );
+      setZiweiAnswer(answer);
+    } catch (err: any) {
+      console.error(err);
+      setZiweiAskError(err?.message || 'AI分析服务暂时不可用，请稍后重试。');
+    } finally {
+      setZiweiAsking(false);
     }
   };
 
@@ -379,6 +420,50 @@ const App: React.FC = () => {
                              ))}
                           </div>
                        </div>
+                    </div>
+
+                    <div className="p-10 bg-gradient-to-br from-indigo-500/10 via-white/60 dark:via-slate-900/60 to-slate-900/10 rounded-[3rem] border border-indigo-500/20 shadow-2xl space-y-6">
+                      <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 font-bold chinese-font text-2xl tracking-widest">
+                        <MessageCircle size={24} /> 命盘提问
+                      </div>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                        写下你近期的困惑，我会结合你的命盘与已推演的格局，为你给出更具体的指引。
+                      </p>
+                      <textarea
+                        value={ziweiQuestion}
+                        onChange={(e) => setZiweiQuestion(e.target.value)}
+                        placeholder="例如：最近是否适合换工作？感情该如何推进？"
+                        className="w-full min-h-[160px] bg-white/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 text-slate-800 dark:text-slate-200 focus:outline-none shadow-inner font-light text-base"
+                      />
+                      {ziweiAskError && <p className="text-rose-500 text-sm">{ziweiAskError}</p>}
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={handleZiweiAsk}
+                          disabled={ziweiAsking}
+                          className="flex-1 py-5 rounded-[2rem] bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 text-white font-bold tracking-widest uppercase text-xs shadow-xl shadow-indigo-500/30 hover:brightness-110 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {ziweiAsking ? <RefreshCw size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+                          {ziweiAsking ? '推演中' : '提交提问'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setZiweiQuestion('');
+                            setZiweiAnswer('');
+                            setZiweiAskError(null);
+                          }}
+                          className="px-6 py-5 rounded-[2rem] border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-xs font-bold uppercase tracking-widest"
+                        >
+                          清空
+                        </button>
+                      </div>
+                      {ziweiAnswer && (
+                        <div className="mt-4 bg-white/80 dark:bg-slate-950/70 border border-indigo-500/20 rounded-[2.5rem] p-6 shadow-inner">
+                          <div className="text-[10px] uppercase tracking-[0.3em] text-indigo-500 mb-3">Ziwei Guidance</div>
+                          <p className="text-slate-700 dark:text-slate-200 leading-relaxed chinese-font text-base font-light text-justify">
+                            {ziweiAnswer}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-4 pt-4">
