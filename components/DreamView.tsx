@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { DreamAnalysis, InterpretationStyle, UserProfile, HistoryRecord } from '@/types';
+import { DreamAnalysis, InterpretationStyle, UserProfile, SaveRecordPayload } from '@/types';
 import { analyzeDream } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
 import DreamLoading from './DreamLoading';
@@ -9,7 +9,7 @@ import { Sparkles, RefreshCw, Crown, ShieldCheck, X, HelpCircle, Moon, Star, Boo
 interface DreamViewProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (profile: UserProfile) => void;
-  onSave?: (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => void;
+  onSave?: (record: SaveRecordPayload) => string | void;
   onTriggerOnboarding?: (callback?: () => void) => void;
   customAnalyze?: (content: string, style: InterpretationStyle, vip: boolean) => Promise<DreamAnalysis>;
   initialAnalysis?: DreamAnalysis | null;
@@ -32,6 +32,7 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
   const [mysticProgress, setMysticProgress] = useState(0);
   const [vipTipIndex, setVipTipIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!showPayment) return;
@@ -82,6 +83,10 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
 
   const handleAnalyze = async (forceVip: boolean = false, overrideStyle?: InterpretationStyle) => {
     if (!content.trim()) return;
+    if (!forceVip) {
+      setIsSaved(false);
+      setSavedRecordId(null);
+    }
     if (forceVip && analysis) setVipLoading(true); else setLoading(true);
     try {
       const isVip = forceVip || vipEnabled;
@@ -93,18 +98,21 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
       if (!compareStyle && analysis && analysis.style !== finalStyle) {
         setCompareStyle(analysis.style);
       }
+      if (isVip) setIsSaved(false);
       if (isVip) setVipEnabled(true);
     } catch (err) { console.error(err); } finally { setLoading(false); setVipLoading(false); }
   };
 
-  const reset = () => { setContent(''); setAnalysis(null); setVipEnabled(false); setIsSaved(false); };
+  const reset = () => { setContent(''); setAnalysis(null); setVipEnabled(false); setIsSaved(false); setSavedRecordId(null); };
 
   const handleSave = () => {
     if (!onSave || !analysis) return;
-    onSave({
+    const savedId = onSave({
       type: 'DREAM',
-      analysis
+      analysis,
+      replaceId: savedRecordId || undefined
     });
+    if (savedId) setSavedRecordId(savedId);
     setIsSaved(true);
   };
 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Sparkles, Sun, Moon, CalendarDays, Settings } from 'lucide-react';
+import { Sparkles, Sun, Moon, CalendarDays, Settings, History } from 'lucide-react';
 import { MysticTarotIcon, ZiweiWheelIcon, DreamInterpretationIcon } from './Icons';
 
 interface ModeSelectionProps {
@@ -8,12 +8,20 @@ interface ModeSelectionProps {
   onToggleTheme?: () => void;
   theme?: 'light' | 'dark';
   onOpenProfile?: () => void;
+  onOpenHistory?: () => void;
 }
 
-const ModeSelection: React.FC<ModeSelectionProps> = ({ onSelect, onToggleTheme, theme, onOpenProfile }) => {
+const ModeSelection: React.FC<ModeSelectionProps> = ({ onSelect, onToggleTheme, theme, onOpenProfile, onOpenHistory }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-[#060608] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] overflow-hidden transition-colors duration-500">
       <div className="absolute top-6 right-6 flex items-center gap-2">
+        <button
+          onClick={onOpenHistory}
+          className="p-3 rounded-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm"
+          aria-label="查看档案"
+        >
+          <History size={18} />
+        </button>
         <button
           onClick={onOpenProfile}
           className="p-3 rounded-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm"

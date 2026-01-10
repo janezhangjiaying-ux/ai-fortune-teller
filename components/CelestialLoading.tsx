@@ -99,11 +99,17 @@ const CelestialLoading: React.FC = () => {
               >
                 <div className="relative w-6 h-6">
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-emerald-400 shadow-[0_0_12px_rgba(59,130,246,0.6)]"></div>
-                  <div className="absolute inset-0 animate-[moon_orbit_4s_linear_infinite]">
+                  <div className="absolute top-1/2 left-1/2 w-16 h-16 -translate-x-1/2 -translate-y-1/2">
+                    <div className="absolute inset-0 rounded-full border border-slate-200/20 shadow-[0_0_10px_rgba(226,232,240,0.08)]"></div>
                     <div
-                      className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-slate-200 shadow-[0_0_8px_rgba(226,232,240,0.7)]"
-                      style={{ transform: 'translate(-50%, -50%) translateX(12px)' }}
-                    ></div>
+                      className="absolute inset-0"
+                      style={{ transformOrigin: '50% 50%', animation: 'moon_orbit 5s linear infinite' }}
+                    >
+                      <div
+                        className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-slate-200 shadow-[0_0_8px_rgba(226,232,240,0.7)]"
+                        style={{ transform: 'translate(-50%, -50%) translateX(26px)' }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>

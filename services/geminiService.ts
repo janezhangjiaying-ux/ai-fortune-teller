@@ -1,6 +1,15 @@
 
 import { Type } from "@google/genai";
 import { UserInfo, AIAnalysis, Palace, TarotCard, TarotAnalysis, Gender, DreamAnalysis, InterpretationStyle, HuangliData, UserProfile } from "../types";
+import {
+  buildDestinyPrompt,
+  buildZiweiQuestionPrompt,
+  buildTarotPrompt,
+  buildTarotFollowupPrompt,
+  buildDreamPrompt,
+  buildHuangliPrompt,
+  buildHuangliPlanPrompt
+} from "./aiPrompts";
 
 const GEMINI_ENDPOINT = '/api/gemini';
 
@@ -66,15 +75,7 @@ const VIP_PROPERTIES = {
 };
 
 export const analyzeDestiny = async (user: UserInfo, chart: Palace[], _profile?: UserProfile): Promise<AIAnalysis> => {
-  const chartDescription = chart.map(p => `${p.name}(${p.zodiac}): ${p.stars.map(s => s.name).join(',')}`).join('; ');
-  
-  const prompt = `
-    作为命理大宗师，解析以下紫微命盘：
-    命主：${user.name || "匿名"}，性别：${user.gender === 'MALE' ? '男' : '女'}，出生：${user.birthDate} ${user.birthTime}
-    命盘：${chartDescription}
-
-    要求：无论画像是否完整，解析必须专业且具有极高情绪价值。若画像缺失，请侧重于宇宙星辰对该命局的共性指引。
-  `;
+  const prompt = buildDestinyPrompt(user, chart);
 
   try {
     const responseText = await generateContent({
@@ -114,21 +115,7 @@ export const analyzeZiweiQuestion = async (
   question: string,
   profile?: UserProfile
 ): Promise<string> => {
-  const chartDescription = chart.map(p => `${p.name}(${p.zodiac}): ${p.stars.map(s => s.name).join(',')}`).join('; ');
-  const profileContext = profile && profile.constellation
-    ? `【画像校准】星座：${profile.constellation}，性格：${profile.mbti || '未知'}。`
-    : '【画像缺失】请以命盘为主给出共性指引。';
-
-  const prompt = `
-    你是紫微斗数大师。结合命盘与既有解析，为用户的近期困惑提供具体指引。
-    命主：${user.name || "匿名"}，性别：${user.gender === 'MALE' ? '男' : '女'}，出生：${user.birthDate} ${user.birthTime}
-    命盘：${chartDescription}
-    既有解析摘要：${analysis.summary}
-    追加问题：${question}
-    ${profileContext}
-
-    要求：语气笃定但温和，条理清晰，避免泛泛而谈；建议不少于 300 字。
-  `;
+  const prompt = buildZiweiQuestionPrompt(user, chart, analysis, question, profile);
 
   try {
     const responseText = await generateContent({
@@ -144,19 +131,9 @@ export const analyzeZiweiQuestion = async (
   }
 };
 
-export const analyzeTarot = async (question: string, cards: TarotCard[], gender: Gender, profile?: UserProfile, vip: boolean = false): Promise<TarotAnalysis> => {
+export const analyzeTarot = async (question: string, cards: TarotCard[], gender: Gender, profile?: UserProfile, vip: boolean = false, lastFollowupQuestion?: string): Promise<TarotAnalysis> => {
   const cardsInfo = cards.map((c, i) => `位置 ${i+1}：${c.name} (${c.isUpright ? '正位' : '逆位'})`).join('；');
-  const profileContext = vip && profile && profile.constellation
-    ? `问卜者背景：${profile.constellation}座，MBTI ${profile.mbti || '未知'}，常驻城市 ${profile.city || '未知'}。`
-    : '【画像缺失】问卜者保持神秘，请基于牌阵本身产出高度灵性的通感解读，提供深度心理疗愈。';
-  
-  const prompt = `
-    作为塔罗大宗师，请对以下三牌阵进行深度解读：
-    问题：${question}，牌阵：${cardsInfo}
-    ${vip ? profileContext : ''}
-    
-    要求：若画像不完整，请提供“跨越时空的灵魂共振”解读，字数不少于 600 字。确保即使没有具体背景，读者也能感到被精准洞察和深深抚慰。
-  `;
+  const prompt = buildTarotPrompt(question, cardsInfo, vip, profile, lastFollowupQuestion);
 
   try {
     const responseText = await generateContent({
@@ -191,25 +168,36 @@ export const analyzeTarot = async (question: string, cards: TarotCard[], gender:
   }
 };
 
+export const analyzeTarotFollowup = async (
+  originalQuestion: string,
+  originalCards: TarotCard[],
+  followupQuestion: string,
+  extraCards: TarotCard[],
+  profile?: UserProfile,
+  vip: boolean = false
+): Promise<string> => {
+  const originalCardsInfo = originalCards
+    .map((c, i) => `位置 ${i + 1}：${c.name} (${c.isUpright ? '正位' : '逆位'})`)
+    .join('；');
+  const extraCardsInfo = extraCards
+    .map((c, i) => `指示牌 ${i + 1}：${c.name} (${c.isUpright ? '正位' : '逆位'})`)
+    .join('；');
+  const prompt = buildTarotFollowupPrompt(originalQuestion, originalCardsInfo, followupQuestion, extraCardsInfo, vip, profile);
+
+  try {
+    const responseText = await generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt
+    });
+    return responseText.trim();
+  } catch (err) {
+    console.error('Gemini API Error:', err);
+    throw new Error('AI分析服务暂时不可用，请稍后重试。');
+  }
+};
+
 export const analyzeDream = async (content: string, style: InterpretationStyle, profile?: UserProfile, vip: boolean = false): Promise<DreamAnalysis> => {
-  const profileContext = vip && profile && profile.constellation
-    ? `梦者背景：${profile.constellation}, MBTI ${profile.mbti || '未知'}，常驻城市 ${profile.city || '未知'}。`
-    : '【画像缺失】请提供通用的集体无意识深度剖析。';
-  const styleMap: Record<InterpretationStyle, string> = {
-    ZHOUGONG: '传统民俗专家（周公解梦）',
-    FREUD: '弗洛伊德精神分析学派',
-    JUNG: '荣格分析心理学派（原型与集体无意识）',
-    COGNITIVE: '认知心理学派（记忆与情绪加工）',
-    ANTHROPOLOGY: '文化人类学视角（象征与仪式）'
-  };
-
-  const prompt = `
-    解析梦境：${content}
-    视角：${styleMap[style]}
-    ${vip ? profileContext : ''}
-
-    要求：若缺乏画像，请从梦境意象的原始力量入手。产出不少于 500 字，提供极高的心理支持。
-  `;
+  const prompt = buildDreamPrompt(content, style, vip, profile);
 
   try {
     const responseText = await generateContent({
@@ -235,11 +223,8 @@ export const analyzeDream = async (content: string, style: InterpretationStyle, 
   } catch (err) { throw err; }
 };
 
-export const analyzeHuangli = async (date: string, profile?: UserProfile, vip: boolean = false): Promise<HuangliData> => {
-  const profileContext = vip && profile && profile.constellation
-    ? `命主画像：${profile.constellation}，MBTI ${profile.mbti || '未知'}，常驻城市 ${profile.city || '未知'}。`
-    : '【画像缺失】提供通用开运指引。';
-  const prompt = `推演日期 ${date} 的老黄历。${vip ? profileContext : ''}`;
+export const analyzeHuangli = async (date: string, profile?: UserProfile, vip: boolean = false, lastPlanTopic?: string): Promise<HuangliData> => {
+  const prompt = buildHuangliPrompt(date, vip, profile, lastPlanTopic);
   try {
     const responseText = await generateContent({
       model: 'gemini-3-flash-preview',
@@ -265,4 +250,25 @@ export const analyzeHuangli = async (date: string, profile?: UserProfile, vip: b
     });
     return { ...JSON.parse(responseText.trim()), date };
   } catch (err) { throw err; }
+};
+
+export const analyzeHuangliPlan = async (
+  date: string,
+  plan: string,
+  data: HuangliData
+): Promise<string> => {
+  const prompt = buildHuangliPlanPrompt(date, plan, data);
+
+  try {
+    const responseText = await generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt
+    });
+    return responseText.trim();
+  } catch (err: any) {
+    if (err?.message?.includes('API_KEY') || err?.message?.includes('INVALID_ARGUMENT') || err?.message?.includes('PERMISSION_DENIED')) {
+      throw new Error('API密钥无效或未设置。请在.env.local里配置 VITE_GEMINI_API_KEY。');
+    }
+    throw new Error('AI分析服务暂时不可用，请稍后重试。');
+  }
 };

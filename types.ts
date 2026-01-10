@@ -116,4 +116,21 @@ export interface HistoryRecord {
   analysis: AIAnalysis | TarotAnalysis | DreamAnalysis | HuangliData;
   pickedCards?: TarotCard[];
   chart?: Palace[];
+  followupQuestion?: string;
+  followupAnswer?: string;
+  huangliPlanInput?: string;
+  huangliPlanAnswer?: string;
+  tarotFollowupQuestion?: string;
+  tarotFollowupAnswer?: string;
+  tarotFollowupCards?: TarotCard[];
+  tarotFollowups?: {
+    question: string;
+    answer: string;
+    cards: TarotCard[];
+    timestamp: number;
+  }[];
 }
+
+export type SaveRecordPayload = Omit<HistoryRecord, 'id' | 'timestamp'> & {
+  replaceId?: string;
+};

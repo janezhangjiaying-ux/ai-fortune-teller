@@ -184,7 +184,13 @@ const TarotView: React.FC<{ onSave?: (record: Omit<HistoryRecord, 'id' | 'timest
                     relative aspect-[2/3.2] w-full rounded-xl overflow-hidden border border-purple-500/10 dark:border-purple-500/20 bg-white dark:bg-slate-900 shadow-xl dark:shadow-2xl shadow-purple-500/5
                     ${!card.isUpright ? 'rotate-180' : ''} transition-all duration-700 hover:scale-105 hover:border-purple-400/30
                   `}>
-                    <img src={card.image} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+                    <img
+                      src={card.image}
+                      alt={card.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                     <div className="absolute bottom-1 left-0 right-0 text-center">
                        <span className={`text-[10px] font-bold text-white tracking-widest bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm ${!card.isUpright ? 'rotate-180 inline-block' : ''} chinese-font`}>

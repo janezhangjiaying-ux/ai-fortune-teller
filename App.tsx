@@ -10,7 +10,7 @@ import HistoryView from './components/HistoryView';
 import OnboardingForm from './components/OnboardingForm';
 import CelestialLoading from './components/CelestialLoading';
 import { MysticTarotIcon, ZiweiWheelIcon, DreamInterpretationIcon } from './components/Icons';
-import { UserInfo, Palace, AIAnalysis, HistoryRecord, DreamAnalysis, TarotAnalysis, UserProfile, Gender, InterpretationStyle, TarotCard } from './types';
+import { UserInfo, Palace, AIAnalysis, HistoryRecord, DreamAnalysis, TarotAnalysis, UserProfile, Gender, InterpretationStyle, TarotCard, SaveRecordPayload } from './types';
 import { calculateChart } from './utils/ziweiEngine';
 import { analyzeDestiny, analyzeTarot, analyzeDream, analyzeZiweiQuestion } from './services/geminiService';
 import { 
@@ -49,12 +49,16 @@ const App: React.FC = () => {
   const [selectedPalace, setSelectedPalace] = useState<number | null>(null);
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [isSaved, setIsSaved] = useState(false);
+  const [lastAstrologyRecordId, setLastAstrologyRecordId] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem('theme') as Theme) || 'dark';
   });
 
-  const [historicalTarot, setHistoricalTarot] = useState<{ cards: TarotCard[], analysis: TarotAnalysis } | null>(null);
+  const [historicalTarot, setHistoricalTarot] = useState<{ cards: TarotCard[], analysis: TarotAnalysis, followupQuestion?: string, followupAnswer?: string, followupCards?: TarotCard[], followups?: { question: string; answer: string; cards: TarotCard[]; timestamp: number }[] } | null>(null);
   const [historicalDream, setHistoricalDream] = useState<DreamAnalysis | null>(null);
+  const [historicalHuangli, setHistoricalHuangli] = useState<HuangliData | null>(null);
+  const [historicalHuangliPlanInput, setHistoricalHuangliPlanInput] = useState<string | null>(null);
+  const [historicalHuangliPlanAnswer, setHistoricalHuangliPlanAnswer] = useState<string | null>(null);
   const [previousMode, setPreviousMode] = useState<ViewMode | null>(null);
   const [showGlobalOnboarding, setShowGlobalOnboarding] = useState(false);
   const [profilePreviousMode, setProfilePreviousMode] = useState<ViewMode | null>(null);
@@ -143,6 +147,7 @@ const App: React.FC = () => {
     setIsSaved(false);
     setHistoricalTarot(null);
     setHistoricalDream(null);
+    setHistoricalHuangli(null);
   };
 
   const handleStartAstrology = (info: UserInfo) => {
@@ -157,6 +162,7 @@ const App: React.FC = () => {
   const performAIAnalysis = async (info: UserInfo, currentChart: Palace[]) => {
     setIsAnalyzing(true);
     setIsSaved(false);
+    setLastAstrologyRecordId(null);
     setAnalysisError(null);
     try {
       const result = await analyzeDestiny(info, currentChart, (userProfile?.constellation ? userProfile : undefined));
@@ -189,6 +195,7 @@ const App: React.FC = () => {
         userProfile?.constellation ? userProfile : undefined
       );
       setZiweiAnswer(answer);
+      setIsSaved(false);
     } catch (err: any) {
       console.error(err);
       setZiweiAskError(err?.message || 'AI分析服务暂时不可用，请稍后重试。');
@@ -197,14 +204,56 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveRecord = (recordData: Omit<HistoryRecord, 'id' | 'timestamp'>) => {
+  const ziweiSections = ziweiAnswer
+    ? ziweiAnswer
+        .split(/###\s*/g)
+        .map((section) => section.trim())
+        .filter(Boolean)
+        .map((section, index) => {
+          const lines = section.split('\n').map((line) => line.trim()).filter(Boolean);
+          if (!lines.length) {
+            return { title: `要点 ${index + 1}`, body: '' };
+          }
+          if (lines.length === 1) {
+            return { title: `要点 ${index + 1}`, body: lines[0] };
+          }
+          const [firstLine, ...rest] = lines;
+          return { title: firstLine, body: rest.join('\n') };
+        })
+    : [];
+
+  const handleSaveRecord = (recordData: SaveRecordPayload) => {
+    const { replaceId, ...payload } = recordData;
+    const timestamp = Date.now();
+    if (replaceId) {
+      let replaced = false;
+      setRecords(prev => {
+        const next = prev.map(record => {
+          if (record.id !== replaceId) return record;
+          replaced = true;
+          return { ...record, ...payload, timestamp };
+        });
+        if (!replaced) {
+          const fallback: HistoryRecord = {
+            ...(payload as Omit<HistoryRecord, 'id' | 'timestamp'>),
+            id: replaceId,
+            timestamp
+          };
+          return [...next, fallback];
+        }
+        return next;
+      });
+      setIsSaved(true);
+      return replaceId;
+    }
     const newRecord: HistoryRecord = {
-      ...recordData,
+      ...(payload as Omit<HistoryRecord, 'id' | 'timestamp'>),
       id: Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now()
+      timestamp
     };
     setRecords(prev => [...prev, newRecord]);
     setIsSaved(true);
+    return newRecord.id;
   };
 
   const handleSelectHistoricalRecord = (record: HistoryRecord) => {
@@ -213,18 +262,31 @@ const App: React.FC = () => {
       setUser(record.userInfo || null);
       setChart(record.chart || []);
       setAnalysis(record.analysis as AIAnalysis);
+      setZiweiQuestion(record.followupQuestion || '');
+      setZiweiAnswer(record.followupAnswer || '');
+      setZiweiAskError(null);
+      setZiweiAsking(false);
       setSelectedMode('ASTROLOGY');
       const mainIdx = (record.chart || []).findIndex(p => p.name === '命宫');
       setSelectedPalace(mainIdx !== -1 ? mainIdx : 0);
     } else if (record.type === 'TAROT') {
       setHistoricalTarot({
         cards: record.pickedCards || [],
-        analysis: record.analysis as TarotAnalysis
+        analysis: record.analysis as TarotAnalysis,
+        followupQuestion: record.tarotFollowupQuestion || '',
+        followupAnswer: record.tarotFollowupAnswer || '',
+        followupCards: record.tarotFollowupCards || [],
+        followups: record.tarotFollowups || []
       });
       setSelectedMode('TAROT');
     } else if (record.type === 'DREAM') {
       setHistoricalDream(record.analysis as DreamAnalysis);
       setSelectedMode('DREAM');
+    } else if (record.type === 'HUANGLI') {
+      setHistoricalHuangli(record.analysis as HuangliData);
+      setHistoricalHuangliPlanInput(record.huangliPlanInput || '');
+      setHistoricalHuangliPlanAnswer(record.huangliPlanAnswer || '');
+      setSelectedMode('HUANGLI');
     }
   };
 
@@ -241,6 +303,9 @@ const App: React.FC = () => {
       setSelectedMode(null);
       setHistoricalTarot(null);
       setHistoricalDream(null);
+      setHistoricalHuangli(null);
+      setHistoricalHuangliPlanInput(null);
+      setHistoricalHuangliPlanAnswer(null);
     }
   };
 
@@ -265,7 +330,19 @@ const App: React.FC = () => {
           onToggleTheme={toggleTheme}
           theme={theme}
           onOpenProfile={() => setShowGlobalOnboarding(true)}
+          onOpenHistory={() => setSelectedMode('HISTORY')}
         />
+        {showGlobalOnboarding && (
+          <OnboardingForm
+            onComplete={handleCompleteOnboarding}
+            initialProfile={userProfile}
+            onClose={() => {
+              setShowGlobalOnboarding(false);
+              setVipOnboardingCallback(null);
+              localStorage.removeItem('vip_onboarding_pending');
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -457,18 +534,58 @@ const App: React.FC = () => {
                         </button>
                       </div>
                       {ziweiAnswer && (
-                        <div className="mt-4 bg-white/80 dark:bg-slate-950/70 border border-indigo-500/20 rounded-[2.5rem] p-6 shadow-inner">
-                          <div className="text-[10px] uppercase tracking-[0.3em] text-indigo-500 mb-3">Ziwei Guidance</div>
-                          <p className="text-slate-700 dark:text-slate-200 leading-relaxed chinese-font text-base font-light text-justify">
-                            {ziweiAnswer}
-                          </p>
+                        <div className="mt-4 space-y-4">
+                          <div className="flex items-center justify-between bg-white/80 dark:bg-slate-950/70 border border-indigo-500/20 rounded-[2.5rem] px-6 py-4 shadow-inner">
+                            <div className="flex items-center gap-3 text-indigo-500">
+                              <ZiweiWheelIcon size={22} />
+                              <div className="text-sm font-bold chinese-font tracking-widest">紫微答复</div>
+                            </div>
+                            <span className="text-[10px] uppercase tracking-[0.3em] text-indigo-400">Ziwei Guidance</span>
+                          </div>
+                          {ziweiSections.length ? (
+                            <div className="space-y-4">
+                              {ziweiSections.map((section, idx) => (
+                                <div key={`${section.title}-${idx}`} className="bg-white/80 dark:bg-slate-950/70 border border-white/10 dark:border-slate-800 rounded-[2rem] p-6 shadow-[inset_0_0_30px_rgba(255,255,255,0.02)]">
+                                  <div className="flex items-center gap-2 text-indigo-500/90 mb-3">
+                                    <h5 className="text-sm font-bold chinese-font tracking-wide">{section.title}</h5>
+                                  </div>
+                                  <div className="space-y-2 text-slate-700 dark:text-slate-200 chinese-font text-sm leading-relaxed">
+                                    {section.body
+                                      .split(/\n+/)
+                                      .map((line, lineIndex) => (
+                                        <p key={`${idx}-${lineIndex}`} className="text-left">
+                                          {line}
+                                        </p>
+                                      ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="bg-white/80 dark:bg-slate-950/70 border border-indigo-500/20 rounded-[2.5rem] p-6 shadow-inner">
+                              <p className="text-slate-700 dark:text-slate-200 leading-relaxed chinese-font text-base font-light">
+                                {ziweiAnswer}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
 
                     <div className="flex gap-4 pt-4">
                        <button 
-                         onClick={() => handleSaveRecord({ type: 'ASTROLOGY', userInfo: user!, chart, analysis })}
+                         onClick={() => {
+                           const savedId = handleSaveRecord({ 
+                             type: 'ASTROLOGY', 
+                             userInfo: user!, 
+                             chart, 
+                             analysis,
+                             followupQuestion: ziweiAnswer ? ziweiQuestion.trim() : '',
+                             followupAnswer: ziweiAnswer || '',
+                             replaceId: lastAstrologyRecordId || undefined
+                           });
+                           if (savedId) setLastAstrologyRecordId(savedId);
+                         }}
                          disabled={isSaved}
                          className={`flex-1 py-5 rounded-[2rem] flex items-center justify-center gap-3 transition-all font-bold text-sm tracking-widest uppercase border ${isSaved ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:scale-105 active:scale-95 shadow-xl shadow-indigo-500/20'}`}
                        >
@@ -491,6 +608,10 @@ const App: React.FC = () => {
             customAnalyze={(q, c, g, vip) => analyzeTarot(q, c, g, (userProfile?.constellation ? userProfile : undefined), vip)}
             initialCards={historicalTarot?.cards}
             initialAnalysis={historicalTarot?.analysis}
+            initialFollowupQuestion={historicalTarot?.followupQuestion}
+            initialFollowupAnswer={historicalTarot?.followupAnswer}
+            initialFollowupCards={historicalTarot?.followupCards}
+            initialFollowups={historicalTarot?.followups}
           />
         ) : selectedMode === 'DREAM' ? (
           <DreamView 
@@ -507,6 +628,9 @@ const App: React.FC = () => {
             onUpdateProfile={handleUpdateProfile}
             onSave={handleSaveRecord}
             onTriggerOnboarding={triggerOnboarding}
+            initialData={historicalHuangli}
+            initialPlanInput={historicalHuangliPlanInput || ''}
+            initialPlanAnswer={historicalHuangliPlanAnswer || ''}
           />
         )}
       </main>

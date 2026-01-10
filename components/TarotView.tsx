@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { TarotCard, TarotAnalysis, Gender, HistoryRecord, UserProfile } from '@/types';
-import { analyzeTarot } from '@/services/geminiService';
+import { TarotCard, TarotAnalysis, Gender, SaveRecordPayload, UserProfile } from '@/types';
+import { analyzeTarot, analyzeTarotFollowup } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
 import TarotLoading from './TarotLoading';
-import { Sparkles, RefreshCw, BrainCircuit, Bookmark, ShieldCheck, Crown, X, Star, HelpCircle } from 'lucide-react';
+import { Sparkles, RefreshCw, BrainCircuit, Bookmark, ShieldCheck, Crown, X, Star, HelpCircle, MessageCircle } from 'lucide-react';
 
 const TAROT_ASSET_BASE = "/assets/tarot";
 const TAROT_IMAGES: Record<string, string> = {
@@ -74,14 +74,18 @@ const CardBack: React.FC<{ active?: boolean; className?: string }> = ({ active, 
 interface TarotViewProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (profile: UserProfile) => void;
-  onSave?: (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => void;
+  onSave?: (record: SaveRecordPayload) => string | void;
   onTriggerOnboarding?: (callback?: () => void) => void;
   customAnalyze?: (question: string, cards: TarotCard[], gender: Gender, vip: boolean) => Promise<TarotAnalysis>;
   initialCards?: TarotCard[];
   initialAnalysis?: TarotAnalysis;
+  initialFollowupQuestion?: string;
+  initialFollowupAnswer?: string;
+  initialFollowupCards?: TarotCard[];
+  initialFollowups?: { question: string; answer: string; cards: TarotCard[]; timestamp: number }[];
 }
 
-const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onSave, onTriggerOnboarding, customAnalyze, initialCards, initialAnalysis }) => {
+const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onSave, onTriggerOnboarding, customAnalyze, initialCards, initialAnalysis, initialFollowupQuestion, initialFollowupAnswer, initialFollowupCards, initialFollowups }) => {
   const [question, setQuestion] = useState(initialAnalysis?.question || '');
   const [gender, setGender] = useState<Gender>(Gender.UNKNOWN);
   const [pickedCards, setPickedCards] = useState<TarotCard[]>(initialCards || []);
@@ -98,6 +102,44 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
   const [error, setError] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [followupQuestion, setFollowupQuestion] = useState(initialFollowupQuestion || '');
+  const [followupAnswer, setFollowupAnswer] = useState(initialFollowupAnswer || '');
+  const [followupError, setFollowupError] = useState<string>('');
+  const [followupLoading, setFollowupLoading] = useState(false);
+  const [followupDrawing, setFollowupDrawing] = useState(false);
+  const [followupCards, setFollowupCards] = useState<TarotCard[]>(initialFollowupCards || []);
+  const [followupNoDraw, setFollowupNoDraw] = useState(false);
+  const [followupHistory, setFollowupHistory] = useState<{ question: string; answer: string; cards: TarotCard[]; timestamp: number }[]>(
+    initialFollowups && initialFollowups.length
+      ? initialFollowups
+      : (initialFollowupQuestion || initialFollowupAnswer || (initialFollowupCards && initialFollowupCards.length))
+        ? [{
+            question: initialFollowupQuestion || '追加提问',
+            answer: initialFollowupAnswer || '',
+            cards: initialFollowupCards || [],
+            timestamp: Date.now()
+          }]
+        : []
+  );
+
+  const parseFollowupSections = (answerText: string) => {
+    return answerText
+      .split(/###\s*/g)
+      .map((section) => section.trim())
+      .filter(Boolean)
+      .map((section, index) => {
+        const lines = section.split('\n').map((line) => line.trim()).filter(Boolean);
+        if (!lines.length) {
+          return { title: `要点 ${index + 1}`, body: '' };
+        }
+        if (lines.length === 1) {
+          return { title: `要点 ${index + 1}`, body: lines[0] };
+        }
+        const [firstLine, ...rest] = lines;
+        return { title: firstLine, body: rest.join('\n') };
+      });
+  };
 
   useEffect(() => {
     if (!showPayment) return;
@@ -139,11 +181,32 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
       setError('请先选择3张卡牌');
       return;
     }
+    if (!forceVip) {
+      setIsSaved(false);
+      setSavedRecordId(null);
+    }
     if (forceVip && analysis) setVipLoading(true); else setLoading(true);
     try {
       const isVip = forceVip || vipEnabled;
-      const result = await analyzeTarot(question, pickedCards, gender, (userProfile || undefined), isVip);
+      const lastFollowupTopic = followupHistory.length ? followupHistory[followupHistory.length - 1].question : '';
+      const result = await analyzeTarot(
+        question,
+        pickedCards,
+        gender,
+        (userProfile || undefined),
+        isVip,
+        isVip && lastFollowupTopic ? lastFollowupTopic : undefined
+      );
       setAnalysis(result);
+      if (!forceVip) {
+        setFollowupQuestion('');
+        setFollowupAnswer('');
+        setFollowupCards([]);
+        setFollowupError('');
+        setFollowupNoDraw(false);
+        setFollowupHistory([]);
+      }
+      if (isVip) setIsSaved(false);
       if (isVip) setVipEnabled(true);
     } catch (err) { 
       console.error(err);
@@ -164,6 +227,14 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
     setAnalysis(null); 
     setSelectedIndices([]); 
     setImageErrors({}); 
+    setIsSaved(false);
+    setSavedRecordId(null);
+    setFollowupQuestion('');
+    setFollowupAnswer('');
+    setFollowupCards([]);
+    setFollowupError('');
+    setFollowupNoDraw(false);
+    setFollowupHistory([]);
     setTimeout(() => setPickingPhase('FAN'), 1500); 
   };
   
@@ -185,6 +256,72 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
     }
   };
 
+  const drawFollowupCards = (count: number) => {
+    const usedNames = new Set(pickedCards.map((card) => card.name));
+    const available = TAROT_DECK.filter((card) => !usedNames.has(card.name));
+    const selected: TarotCard[] = [];
+    const pool = [...available];
+    for (let i = 0; i < Math.min(count, pool.length); i += 1) {
+      const index = Math.floor(Math.random() * pool.length);
+      const card = pool.splice(index, 1)[0];
+      selected.push({
+        name: card.name,
+        image: card.image,
+        isUpright: Math.random() > 0.3
+      });
+    }
+    return selected;
+  };
+
+  const handleFollowupAsk = async () => {
+    setFollowupError('');
+    if (!analysis) {
+      setFollowupError('请先完成塔罗解读');
+      return;
+    }
+    if (!followupQuestion.trim()) {
+      setFollowupError('请写下你的追加提问');
+      return;
+    }
+    const roll = Math.random();
+    const drawCount = roll < 0.4 ? 0 : roll < 0.8 ? 1 : 2;
+    const extraCards = drawCount > 0 ? drawFollowupCards(drawCount) : [];
+    setFollowupCards(extraCards);
+    setFollowupDrawing(drawCount > 0);
+    setFollowupNoDraw(drawCount === 0);
+    setFollowupLoading(true);
+    setIsSaved(false);
+    try {
+      if (drawCount > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 900));
+      }
+      const answer = await analyzeTarotFollowup(
+        question,
+        pickedCards,
+        followupQuestion.trim(),
+        extraCards,
+        userProfile || undefined,
+        vipEnabled
+      );
+      setFollowupAnswer(answer);
+      setFollowupHistory((prev) => [
+        ...prev,
+        {
+          question: followupQuestion.trim(),
+          answer,
+          cards: extraCards,
+          timestamp: Date.now()
+        }
+      ]);
+    } catch (err: any) {
+      console.error(err);
+      setFollowupError(err?.message || 'AI分析服务暂时不可用，请稍后重试。');
+    } finally {
+      setFollowupDrawing(false);
+      setFollowupLoading(false);
+    }
+  };
+
   const handleImageError = (idx: number) => {
     setImageErrors(prev => ({ ...prev, [idx]: true }));
   };
@@ -197,15 +334,28 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
     setSelectedIndices([]);
     setError('');
     setIsSaved(false);
+    setSavedRecordId(null);
+    setFollowupQuestion('');
+    setFollowupAnswer('');
+    setFollowupCards([]);
+    setFollowupError('');
+    setFollowupNoDraw(false);
+    setFollowupHistory([]);
   };
 
   const handleSave = () => {
     if (!onSave || !analysis) return;
-    onSave({
+    const savedId = onSave({
       type: 'TAROT',
       analysis,
-      pickedCards
+      pickedCards,
+      tarotFollowupQuestion: followupQuestion.trim() ? followupQuestion.trim() : '',
+      tarotFollowupAnswer: followupAnswer || '',
+      tarotFollowupCards: followupCards,
+      tarotFollowups: followupHistory,
+      replaceId: savedRecordId || undefined
     });
+    if (savedId) setSavedRecordId(savedId);
     setIsSaved(true);
   };
 
@@ -279,7 +429,9 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
                     <img 
                       src={card.image} 
                       alt={card.name} 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                       onError={() => handleImageError(idx)}
                     />
                   )}
@@ -323,6 +475,146 @@ const TarotView: React.FC<TarotViewProps> = ({ userProfile, onUpdateProfile, onS
              <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px]"></div>
              <h4 className="text-indigo-700 dark:text-indigo-400 font-bold mb-8 flex items-center gap-3 chinese-font text-2xl tracking-widest"><BrainCircuit size={28} className="text-amber-500" /> 命运综合解读</h4>
              <p className="text-slate-800 dark:text-slate-200 leading-relaxed chinese-font text-lg font-light tracking-wide text-justify">{analysis.interpretation}</p>
+          </div>
+
+          <div className="p-10 md:p-12 bg-gradient-to-br from-purple-500/10 via-white/70 dark:via-slate-900/70 to-indigo-500/10 rounded-[3rem] border border-purple-200/30 dark:border-purple-800/30 shadow-2xl space-y-6">
+            <div className="flex items-center gap-3 text-purple-600 dark:text-purple-400 font-bold chinese-font text-2xl tracking-widest">
+              <MessageCircle size={24} /> 追加提问
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+              可补充细节、寻求建议或澄清疑惑。必要时，我会再抽取 1-2 张指示牌辅助解读。
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                '刚才提到的“阻碍”，更像人际还是流程问题？',
+                '既然会有变数，我该做什么来降低风险？',
+                '那张“逆位牌”的含义能再展开讲讲吗？'
+              ].map((tip) => (
+                <button
+                  key={tip}
+                  onClick={() => setFollowupQuestion(tip)}
+                  className="px-3 py-1.5 rounded-full border border-purple-300/40 text-[10px] text-purple-500 tracking-widest hover:bg-purple-500/10 transition-colors"
+                >
+                  {tip}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={followupQuestion}
+              onChange={(e) => setFollowupQuestion(e.target.value)}
+              placeholder="写下你的追加提问..."
+              className="w-full min-h-[140px] bg-white/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 text-slate-800 dark:text-slate-200 focus:outline-none shadow-inner font-light text-base"
+            />
+            {followupError && <p className="text-rose-500 text-sm">{followupError}</p>}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleFollowupAsk}
+                disabled={followupLoading}
+                className="flex-1 py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-500 text-white font-bold tracking-widest uppercase text-xs shadow-xl shadow-purple-500/30 hover:brightness-110 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {followupLoading ? <RefreshCw size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+                {followupLoading ? '推演中' : '提交追加提问'}
+              </button>
+              <button
+                onClick={() => {
+                  setFollowupQuestion('');
+                  setFollowupAnswer('');
+                  setFollowupError('');
+                  setFollowupCards([]);
+                }}
+                className="px-6 py-4 rounded-[2rem] border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-xs font-bold uppercase tracking-widest"
+              >
+                清空
+              </button>
+            </div>
+
+            {(followupDrawing || followupCards.length > 0) && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-purple-500/80 text-sm font-bold chinese-font tracking-widest">
+                  <Sparkles size={18} /> 指示牌 / 辅助牌
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {(followupDrawing ? followupCards : followupCards).map((card, idx) => (
+                    <div key={`${card.name}-${idx}`} className="relative aspect-[2/3.1] w-full rounded-2xl overflow-hidden border border-purple-500/20 bg-slate-900 shadow-2xl">
+                      {followupDrawing ? (
+                        <div className="w-full h-full animate-tarot-shuffle">
+                          <CardBack />
+                        </div>
+                      ) : (
+                        <>
+                          <img
+                            src={card.image}
+                            alt={card.name}
+                            className={`w-full h-full object-cover animate-card-fly-in ${!card.isUpright ? 'rotate-180' : ''}`}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none"></div>
+                          <div className="absolute bottom-2 left-0 right-0 text-center z-10">
+                            <span className="text-[10px] font-bold text-white tracking-widest bg-black/40 px-2 py-1 rounded-full backdrop-blur-md">{card.name}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {followupNoDraw && !followupDrawing && followupCards.length === 0 && (
+              <div className="flex items-center gap-2 text-purple-500/80 text-xs font-bold chinese-font tracking-widest">
+                <Sparkles size={16} />
+                本次无需补牌
+              </div>
+            )}
+
+            {followupHistory.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between bg-white/80 dark:bg-slate-950/70 border border-purple-500/20 rounded-[2rem] px-6 py-4 shadow-inner">
+                  <div className="flex items-center gap-2 text-purple-500">
+                    <Sparkles size={18} />
+                    <div className="text-sm font-bold chinese-font tracking-widest">塔罗答复</div>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-purple-400">Tarot Guidance</span>
+                </div>
+                {followupHistory.map((entry, entryIndex) => {
+                  const sections = parseFollowupSections(entry.answer);
+                  return (
+                    <div key={`${entry.timestamp}-${entryIndex}`} className="space-y-4">
+                      <div className="flex flex-col gap-2 px-2">
+                        <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400">追加提问 {entryIndex + 1}</div>
+                        <p className="text-sm chinese-font text-slate-600 dark:text-slate-300">{entry.question}</p>
+                      </div>
+                      {sections.length ? (
+                        <div className="space-y-4">
+                          {sections.map((section, idx) => (
+                            <div key={`${section.title}-${idx}`} className="bg-white/80 dark:bg-slate-950/70 border border-white/10 dark:border-slate-800 rounded-[2rem] p-6 shadow-[inset_0_0_30px_rgba(255,255,255,0.02)]">
+                              <div className="flex items-center gap-2 text-purple-500/90 mb-3">
+                                <h5 className="text-sm font-bold chinese-font tracking-wide">{section.title}</h5>
+                              </div>
+                              <div className="space-y-2 text-slate-700 dark:text-slate-200 chinese-font text-sm leading-relaxed">
+                                {section.body
+                                  .split(/\n+/)
+                                  .map((line, lineIndex) => (
+                                    <p key={`${entryIndex}-${idx}-${lineIndex}`} className="text-left">
+                                      {line}
+                                    </p>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-white/80 dark:bg-slate-950/70 border border-purple-500/20 rounded-[2rem] p-6 shadow-inner">
+                          <p className="text-slate-700 dark:text-slate-200 leading-relaxed chinese-font text-base font-light">
+                            {entry.answer}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
           
           <div className="px-2 space-y-3 mt-8">

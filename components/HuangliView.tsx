@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { HuangliData, UserProfile, HistoryRecord } from '@/types';
-import { analyzeHuangli } from '@/services/geminiService';
+import { HuangliData, UserProfile, SaveRecordPayload } from '@/types';
+import { analyzeHuangli, analyzeHuangliPlan } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
 import { Calendar as CalendarIcon, Sparkles, Compass, ShieldAlert, Heart, Info, Crown, ShieldCheck, X, Star, Zap, User, Check, HelpCircle, RefreshCw } from 'lucide-react';
 
@@ -106,13 +106,18 @@ const AlmanacLoading: React.FC = () => {
 interface HuangliViewProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (profile: UserProfile) => void;
-  onSave?: (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => void;
+  onSave?: (record: SaveRecordPayload) => string | void;
   onTriggerOnboarding?: (callback?: () => void) => void;
+  initialData?: HuangliData | null;
+  initialPlanInput?: string;
+  initialPlanAnswer?: string;
 }
 
-const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile, onSave, onTriggerOnboarding }) => {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [data, setData] = useState<HuangliData | null>(null);
+const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile, onSave, onTriggerOnboarding, initialData, initialPlanInput = '', initialPlanAnswer = '' }) => {
+  const [selectedDate, setSelectedDate] = useState<string>(
+    initialData?.date || new Date().toISOString().split('T')[0]
+  );
+  const [data, setData] = useState<HuangliData | null>(initialData || null);
   const [loading, setLoading] = useState(false);
   const [vipLoading, setVipLoading] = useState(false);
   const [vipEnabled, setVipEnabled] = useState(false);
@@ -121,10 +126,41 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
   const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'VERIFYING' | 'SUCCESS'>('IDLE');
   const [mysticProgress, setMysticProgress] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [hasRequested, setHasRequested] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [planInput, setPlanInput] = useState('');
+  const [planAnswer, setPlanAnswer] = useState('');
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [isViewingHistory, setIsViewingHistory] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const hasRequestedRef = useRef(hasRequested);
 
-  const fetchHuangli = useCallback(async (date: string, isVip: boolean = false) => {
+  useEffect(() => {
+    hasRequestedRef.current = hasRequested;
+  }, [hasRequested]);
+
+  useEffect(() => {
+    if (!initialData) return;
+    setData(initialData);
+    if (initialData.date) {
+      setSelectedDate(initialData.date);
+    }
+    setPlanInput(initialPlanInput);
+    setPlanAnswer(initialPlanAnswer);
+    setHasRequested(true);
+    setIsViewingHistory(true);
+    setSavedRecordId(null);
+  }, [initialData, initialPlanInput, initialPlanAnswer]);
+
+  const fetchHuangli = useCallback(async (date: string, isVip: boolean = false, lastPlanTopic?: string) => {
     const requestId = ++requestIdRef.current;
+    setFetchError(null);
+    if (!isVip) {
+      setData(null);
+      setSavedRecordId(null);
+    }
     if (isVip) {
       setVipLoading(true);
       setLoading(false);
@@ -132,21 +168,31 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
       setLoading(true);
     }
     try {
-      const result = await analyzeHuangli(date, userProfile || undefined, isVip);
+      const result = await analyzeHuangli(date, userProfile || undefined, isVip, lastPlanTopic);
       if (requestId !== requestIdRef.current) return;
       setData(result);
-      if (isVip) setVipEnabled(true);
-    } catch (err) { console.error(err); } finally {
+      setHasRequested(true);
+      if (isVip) {
+        setVipEnabled(true);
+        setIsSaved(false);
+      }
+    } catch (err) {
+      console.error(err);
+      if (requestId !== requestIdRef.current) return;
+      setFetchError('AI分析服务暂时不可用，请稍后重试。');
+    } finally {
       if (requestId !== requestIdRef.current) return;
       if (isVip) setVipLoading(false); else setTimeout(() => setLoading(false), 1200);
     }
   }, [userProfile]);
 
   useEffect(() => {
+    if (!hasRequestedRef.current || isViewingHistory) return;
     fetchHuangli(selectedDate, false);
     setVipEnabled(false);
     setIsSaved(false);
-  }, [selectedDate, fetchHuangli]);
+    setSavedRecordId(null);
+  }, [selectedDate, fetchHuangli, isViewingHistory]);
 
   useEffect(() => {
     if (!showPayment) return;
@@ -169,22 +215,48 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
         if (onTriggerOnboarding) {
           onTriggerOnboarding(() => {
             // VIP onboarding完成后，继续VIP分析
-            fetchHuangli(selectedDate, true);
+            fetchHuangli(selectedDate, true, planInput.trim() ? planInput.trim() : undefined);
           });
         }
       } else {
-        fetchHuangli(selectedDate, true);
+        fetchHuangli(selectedDate, true, planInput.trim() ? planInput.trim() : undefined);
       }
     }, 3000);
   };
 
   const handleSave = () => {
     if (!onSave || !data) return;
-    onSave({
+    const savedId = onSave({
       type: 'HUANGLI',
-      analysis: data
+      analysis: data,
+      huangliPlanInput: planInput.trim() ? planInput.trim() : '',
+      huangliPlanAnswer: planAnswer || '',
+      replaceId: savedRecordId || undefined
     });
+    if (savedId) setSavedRecordId(savedId);
     setIsSaved(true);
+  };
+
+  const handlePlanAnalyze = async () => {
+    if (!data) {
+      setPlanError('请先完成黄历推演');
+      return;
+    }
+    if (!planInput.trim()) {
+      setPlanError('请填写你计划做的事情');
+      return;
+    }
+    setPlanError(null);
+    setPlanLoading(true);
+    try {
+      const answer = await analyzeHuangliPlan(selectedDate, planInput.trim(), data);
+      setPlanAnswer(answer);
+      setIsSaved(false);
+    } catch (err: any) {
+      setPlanError(err?.message || 'AI分析服务暂时不可用，请稍后重试。');
+    } finally {
+      setPlanLoading(false);
+    }
   };
 
 
@@ -194,6 +266,9 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
         .vip-active-glow { animation: vip-glow 2s infinite ease-in-out; }
         @keyframes vip-glow { 0%, 100% { box-shadow: 0 0 10px rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.4); } 50% { box-shadow: 0 0 20px rgba(245,158,11,0.4); border-color: rgba(245,158,11,0.8); } }
         @keyframes loading-shimmer { 0% { transform: translateX(-40%); } 100% { transform: translateX(220%); } }
+        .huangli-date-input::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
+        .huangli-date-input::-webkit-inner-spin-button,
+        .huangli-date-input::-webkit-clear-button { display: none; }
       `}</style>
 
       <div className="text-center space-y-1">
@@ -205,9 +280,46 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex flex-col items-center gap-3">
           <label className="text-[10px] font-bold text-slate-500 chinese-font tracking-[0.3em] uppercase">阳历日期选择</label>
           <div className="relative group">
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-3 text-lg font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all cursor-pointer shadow-sm chinese-font" />
-            <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="huangli-date-input bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-3 pr-12 text-lg font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all cursor-pointer shadow-sm chinese-font"
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                const wrapper = e.currentTarget.parentElement;
+                const input = wrapper?.querySelector('input[type=\"date\"]') as HTMLInputElement | null;
+                if (!input) return;
+                if (typeof input.showPicker === 'function') {
+                  input.showPicker();
+                } else {
+                  input.focus();
+                  input.click();
+                }
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-amber-500 transition-colors"
+              aria-label="选择日期"
+            >
+              <CalendarIcon size={18} />
+            </button>
           </div>
+          <button
+            onClick={() => {
+              setIsViewingHistory(false);
+              fetchHuangli(selectedDate, false);
+            }}
+            disabled={loading}
+            className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-500 text-white text-xs font-bold tracking-[0.3em] uppercase shadow-lg shadow-amber-500/20 hover:brightness-110 transition-all active:scale-95 disabled:opacity-60"
+          >
+            {hasRequested ? '更新推演' : '开始推演'}
+          </button>
+          {fetchError && (
+            <div className="text-xs text-rose-500 flex items-center gap-2 mt-2">
+              <ShieldAlert size={12} /> {fetchError}
+            </div>
+          )}
         </div>
 
         {loading ? <AlmanacLoading /> : data && (
@@ -241,6 +353,81 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
                 开运方位：<span className="text-amber-500 font-bold">{data.luckyDirection}</span>
               </p>
             </div>
+
+            <div className="bg-white/40 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 md:p-8 space-y-5">
+              <div className="flex items-center gap-2 text-amber-500">
+                <Sparkles size={18} />
+                <h4 className="text-sm font-bold chinese-font tracking-widest">当日事项推演</h4>
+              </div>
+              <p className="text-xs text-slate-400 chinese-font">
+                写下今日要办之事，先看宜忌，再给稳妥做法，让行事更顺。
+              </p>
+              <textarea
+                value={planInput}
+                onChange={(e) => setPlanInput(e.target.value)}
+                placeholder="例如：签合同、谈合作、搬家、动土、出行、看病..."
+                className="w-full min-h-[120px] rounded-[1.5rem] bg-white/80 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-4 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 chinese-font"
+              />
+              {planError && (
+                <div className="text-xs text-rose-500 flex items-center gap-2">
+                  <ShieldAlert size={12} /> {planError}
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePlanAnalyze}
+                  disabled={planLoading}
+                  className="flex-1 py-4 rounded-[1.5rem] bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold tracking-[0.3em] uppercase shadow-lg shadow-amber-500/20 hover:brightness-110 transition-all active:scale-95 disabled:opacity-60"
+                >
+                  {planLoading ? '推演中...' : '推演此事'}
+                </button>
+                <button
+                  onClick={() => {
+                    setPlanInput('');
+                    setPlanAnswer('');
+                    setPlanError(null);
+                  }}
+                  className="px-5 py-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 text-xs font-bold tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  清空
+                </button>
+              </div>
+              {planAnswer && (
+                <div className="mt-2 space-y-4">
+                  <div className="flex items-center justify-between bg-white/80 dark:bg-slate-950/70 border border-amber-500/20 rounded-[2rem] px-6 py-4 shadow-inner">
+                    <div className="flex items-center gap-2 text-amber-500">
+                      <Sparkles size={18} />
+                      <div className="text-sm font-bold chinese-font tracking-widest">黄历答复</div>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-amber-400">Almanac Guidance</span>
+                  </div>
+                  <div className="space-y-4">
+                    {planAnswer.split('\n').map((raw, idx) => {
+                      const line = raw.trim();
+                      if (!line) return null;
+                      const match = line.match(/^【([^】]+)】\\s*(.*)$/);
+                      const label = match ? match[1] : `要点 ${idx + 1}`;
+                      const content = match ? match[2] : line;
+                      return (
+                        <div key={`${label}-${idx}`} className="bg-white/80 dark:bg-slate-950/70 border border-white/10 dark:border-slate-800 rounded-[2rem] p-6 shadow-[inset_0_0_30px_rgba(255,255,255,0.02)]">
+                          <div className="flex items-center gap-2 text-amber-500/90 mb-3">
+                            <h5 className="text-sm font-bold chinese-font tracking-wide">{label}</h5>
+                          </div>
+                          <p className="text-sm chinese-font leading-relaxed text-slate-700 dark:text-slate-200">
+                            {content}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {!loading && !data && !fetchError && (
+          <div className="p-10 text-center text-slate-400 chinese-font tracking-widest">
+            请选择日期并开始推演
           </div>
         )}
       </div>
