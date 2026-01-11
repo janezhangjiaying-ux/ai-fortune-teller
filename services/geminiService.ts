@@ -13,11 +13,21 @@ import {
 
 const GEMINI_ENDPOINT = '/api/gemini';
 
+const normalizeContents = (contents: any) => {
+  if (typeof contents === 'string') {
+    return [{ role: 'user', parts: [{ text: contents }] }];
+  }
+  return contents;
+};
+
 const generateContent = async (payload: { model: string; contents: any; config?: any }) => {
   const response = await fetch(GEMINI_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      ...payload,
+      contents: normalizeContents(payload.contents)
+    })
   });
 
   if (!response.ok) {

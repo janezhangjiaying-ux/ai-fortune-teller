@@ -18,13 +18,18 @@ export const onRequestPost = async (context: any) => {
       });
     }
 
+    const normalizedContents =
+      typeof contents === "string"
+        ? [{ role: "user", parts: [{ text: contents }] }]
+        : contents;
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          contents,
+          contents: normalizedContents,
           generationConfig: config || undefined
         })
       }
