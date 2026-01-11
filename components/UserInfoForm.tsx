@@ -48,7 +48,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onSubmit, defaultBirthDate 
               value={formData.birthDate}
               onChange={(value) => setFormData({ ...formData, birthDate: value })}
               placeholder="请选择日期"
-              className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all font-light"
+              className="h-12 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-base text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all font-light"
             />
           </div>
           <div className="space-y-1">
@@ -60,7 +60,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onSubmit, defaultBirthDate 
               required
               value={formData.birthTime}
               onChange={e => setFormData({...formData, birthTime: e.target.value})}
-              className="w-full bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all font-light"
+              className="w-full h-12 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-base text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all font-light"
             />
           </div>
         </div>

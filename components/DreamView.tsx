@@ -138,7 +138,7 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
       <div className="max-w-4xl mx-auto space-y-10">
         {!analysis ? (
           <div className="space-y-6">
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="请描述你的梦境细节..." className="w-full bg-white dark:bg-[#0a0a14] border border-slate-200 dark:border-slate-800 rounded-[3rem] p-10 min-h-[220px] text-xl font-light text-center shadow-inner italic focus:outline-none" />
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="请描述你的梦境细节..." className="w-full bg-white dark:bg-[#0a0a14] border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-8 min-h-[180px] text-base sm:text-lg font-light text-center shadow-inner italic focus:outline-none" />
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                {styleOptions.map((opt) => {
                  const Icon = opt.icon;
@@ -182,7 +182,9 @@ const DreamView: React.FC<DreamViewProps> = ({ userProfile, onUpdateProfile, onS
           </div>
         ) : (
           <div className="space-y-10 animate-in slide-in-from-bottom-8 duration-700">
-            <div className="bg-slate-900/40 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-[4rem] p-12 text-center shadow-sm"><p className="chinese-font text-3xl font-light italic text-slate-900 dark:text-slate-100 tracking-wide">“{content}”</p></div>
+            <div className="bg-slate-900/40 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-10 text-center shadow-sm">
+              <p className="chinese-font text-base sm:text-lg font-light italic text-slate-900 dark:text-slate-100 tracking-wide leading-relaxed">“{content}”</p>
+            </div>
             <div className="p-10 border border-slate-100 dark:border-slate-800 rounded-[3rem] bg-white/5 dark:bg-slate-900/20 relative shadow-sm"><div className="flex items-center gap-3 mb-8 text-indigo-500"><Sparkles size={24} className="text-amber-500" /><h4 className="chinese-font text-2xl font-bold tracking-widest">{({
               ZHOUGONG: '周公解梦深度解析',
               FREUD: '弗洛伊德精神分析',
