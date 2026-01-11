@@ -636,7 +636,10 @@ const App: React.FC = () => {
       </main>
 
       {/* 底部导航栏 */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-lg bg-white/95 dark:bg-slate-950/95 backdrop-blur-3xl border border-slate-200 dark:border-slate-800/50 p-2 rounded-[2.5rem] shadow-2xl flex items-center justify-between z-50">
+      <div
+        className="fixed left-1/2 -translate-x-1/2 w-[95%] max-w-lg bg-white/95 dark:bg-slate-950/95 backdrop-blur-3xl border border-slate-200 dark:border-slate-800/50 p-2 rounded-[2.5rem] shadow-2xl flex items-center justify-between z-50"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 6px)' }}
+      >
         {[
           { mode: 'ASTROLOGY', icon: <ZiweiWheelIcon size={18} />, label: '命理' },
           { mode: 'TAROT', icon: <MysticTarotIcon size={18} />, label: '占卜' },
