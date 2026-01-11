@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { Sparkles, Calendar, Zap, Star, MapPin, User, ChevronRight, Compass, X, ShieldAlert } from 'lucide-react';
+import DatePicker from './DatePicker';
 
 const CONSTELLATIONS = [
   { name: '白羊座', range: [321, 419], color: 'red-500' }, { name: '金牛座', range: [420, 520], color: 'emerald-500' }, 
@@ -111,11 +112,11 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ onComplete, initialProf
               <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 pl-1">
                 <Calendar size={16} /><span className="text-[11px] font-bold uppercase tracking-widest">阳历出生日期</span>
               </div>
-              <input 
-                type="date"
+              <DatePicker
                 value={profile.birthDate}
-                onChange={(e) => setProfile({ ...profile, birthDate: e.target.value })}
-                className="w-full bg-slate-100/50 dark:bg-black/20 border-none rounded-2xl px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold transition-all"
+                onChange={(value) => setProfile({ ...profile, birthDate: value })}
+                placeholder="请选择日期"
+                className="bg-slate-100/50 dark:bg-black/20 border-none rounded-2xl px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold transition-all"
               />
             </div>
 

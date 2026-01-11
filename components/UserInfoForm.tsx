@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserInfo, Gender } from '../types';
 import { MapPin, Calendar, Clock, Sparkles } from 'lucide-react';
+import DatePicker from './DatePicker';
 
 interface UserInfoFormProps {
   onSubmit: (info: UserInfo) => void;
@@ -43,12 +44,11 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onSubmit, defaultBirthDate 
             <label className="text-[10px] font-semibold text-slate-500 flex items-center gap-2 px-1 uppercase tracking-wider">
               <Calendar size={12} /> 出生日期 (阳历)
             </label>
-            <input 
-              type="date"
-              required
+            <DatePicker
               value={formData.birthDate}
-              onChange={e => setFormData({...formData, birthDate: e.target.value})}
-              className="w-full bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all font-light"
+              onChange={(value) => setFormData({ ...formData, birthDate: value })}
+              placeholder="请选择日期"
+              className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all font-light"
             />
           </div>
           <div className="space-y-1">

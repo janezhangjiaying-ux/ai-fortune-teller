@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HuangliData, UserProfile, SaveRecordPayload } from '@/types';
 import { analyzeHuangli, analyzeHuangliPlan } from '@/services/geminiService';
 import VIPRecommendationSection from './VIPRecommendationSection';
-import { Calendar as CalendarIcon, Sparkles, Compass, ShieldAlert, Heart, Info, Crown, ShieldCheck, X, Star, Zap, User, Check, HelpCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, Compass, ShieldAlert, Heart, Info, Crown, ShieldCheck, X, Star, Zap, User, Check, HelpCircle, RefreshCw } from 'lucide-react';
+import DatePicker from './DatePicker';
 
 const AlmanacLoading: React.FC = () => {
   const [progress, setProgress] = useState(0);
@@ -266,9 +267,6 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
         .vip-active-glow { animation: vip-glow 2s infinite ease-in-out; }
         @keyframes vip-glow { 0%, 100% { box-shadow: 0 0 10px rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.4); } 50% { box-shadow: 0 0 20px rgba(245,158,11,0.4); border-color: rgba(245,158,11,0.8); } }
         @keyframes loading-shimmer { 0% { transform: translateX(-40%); } 100% { transform: translateX(220%); } }
-        .huangli-date-input::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
-        .huangli-date-input::-webkit-inner-spin-button,
-        .huangli-date-input::-webkit-clear-button { display: none; }
       `}</style>
 
       <div className="text-center space-y-1">
@@ -279,32 +277,12 @@ const HuangliView: React.FC<HuangliViewProps> = ({ userProfile, onUpdateProfile,
       <div className="bg-white dark:bg-[#0a0a14] border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-xl overflow-hidden">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex flex-col items-center gap-3">
           <label className="text-[10px] font-bold text-slate-500 chinese-font tracking-[0.3em] uppercase">阳历日期选择</label>
-          <div className="relative group">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="huangli-date-input bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-3 pr-12 text-lg font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all cursor-pointer shadow-sm chinese-font"
-            />
-            <button
-              type="button"
-              onClick={(e) => {
-                const wrapper = e.currentTarget.parentElement;
-                const input = wrapper?.querySelector('input[type=\"date\"]') as HTMLInputElement | null;
-                if (!input) return;
-                if (typeof input.showPicker === 'function') {
-                  input.showPicker();
-                } else {
-                  input.focus();
-                  input.click();
-                }
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-amber-500 transition-colors"
-              aria-label="选择日期"
-            >
-              <CalendarIcon size={18} />
-            </button>
-          </div>
+          <DatePicker
+            value={selectedDate}
+            onChange={(value) => setSelectedDate(value)}
+            placeholder="请选择日期"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-3 text-lg font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all cursor-pointer shadow-sm chinese-font"
+          />
           <button
             onClick={() => {
               setIsViewingHistory(false);
